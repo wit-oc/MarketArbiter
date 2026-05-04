@@ -132,14 +132,14 @@ f_price_text(_value) =>
     na(_value) ? "na" : str.tostring(_value, format.mintick)
 
 f_family_summary(_i) =>
-    text = ""
+    familyText = ""
     if array.get(zoneHasStructure, _i)
-        text := text + "structure"
+        familyText := familyText + "structure"
     if array.get(zoneHasBase, _i)
-        text := text + (text == "" ? "" : "+") + "base"
+        familyText := familyText + (familyText == "" ? "" : "+") + "base"
     if array.get(zoneHasReaction, _i)
-        text := text + (text == "" ? "" : "+") + "reaction"
-    text == "" ? "none" : text
+        familyText := familyText + (familyText == "" ? "" : "+") + "reaction"
+    familyText == "" ? "none" : familyText
 
 f_visible_selected_zone(_i) =>
     array.get(zoneSelectorStatus, _i) == "kept" and array.get(zoneSelectorRank, _i) > 0 and array.get(zoneSelectorRank, _i) <= renderSelectedLimit and not na(array.get(zoneCoreLow, _i)) and not na(array.get(zoneCoreHigh, _i))
