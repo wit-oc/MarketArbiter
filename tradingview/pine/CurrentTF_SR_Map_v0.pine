@@ -1,0 +1,238 @@
+//@version=5
+indicator("Current TF SR Map v0 — 3K Regions", overlay=true, scale=scale.right, format=format.price, max_bars_back=5000, max_boxes_count=120, max_labels_count=120, max_lines_count=120)
+
+// Standalone TradingView S/R visualizer.
+// Goal: draw useful current-timeframe support/resistance regions over a 3K-bar working window.
+// This is intentionally separate from MarketArbiter / Surveyor research logic.
+
+// -------------------- Inputs --------------------
+lookbackBars      = input.int(3000, "SR working window bars", minval=500, maxval=5000)
+pivotLen          = input.int(5, "Pivot sensitivity", minval=2, maxval=20)
+maxStoredZones    = input.int(80, "Max stored zones", minval=20, maxval=160)
+maxVisibleZones   = input.int(12, "Max visible zones", minval=3, maxval=40)
+zoneAtrMult       = input.float(0.35, "Zone half-width ATR", minval=0.05, maxval=2.00, step=0.05)
+minZoneWidthPct   = input.float(0.0008, "Min zone half-width % price", minval=0.0001, maxval=0.0200, step=0.0001)
+mergeTolAtr       = input.float(0.60, "Merge tolerance ATR", minval=0.05, maxval=3.00, step=0.05)
+mergeTolPct       = input.float(0.0015, "Merge tolerance % price", minval=0.0001, maxval=0.0200, step=0.0001)
+breakAtr          = input.float(0.20, "Break/flip close buffer ATR", minval=0.00, maxval=2.00, step=0.05)
+touchGapBars      = input.int(8, "Min bars between touch counts", minval=1, maxval=100)
+extendBars        = input.int(150, "Extend boxes right bars", minval=10, maxval=500)
+showLabels        = input.bool(true, "Show zone labels")
+showBroken        = input.bool(false, "Show broken stale zones")
+allowFlips        = input.bool(true, "Flip zones after decisive close")
+
+// -------------------- Constants --------------------
+DIR_SUPPORT = 1
+DIR_RESIST  = -1
+STATE_ACTIVE = 0
+STATE_FLIPPED = 1
+STATE_BROKEN = 2
+
+// -------------------- Series --------------------
+atr = ta.atr(14)
+ph = ta.pivothigh(high, pivotLen, pivotLen)
+pl = ta.pivotlow(low, pivotLen, pivotLen)
+
+// -------------------- Zone store --------------------
+var zTop       = array.new_float()
+var zBot       = array.new_float()
+var zMid       = array.new_float()
+var zDir       = array.new_int()
+var zState     = array.new_int()
+var zTouches   = array.new_int()
+var zBirthBar  = array.new_int()
+var zLastTouch = array.new_int()
+var zLastPivot = array.new_int()
+var zBox       = array.new_box()
+var zLabel     = array.new_label()
+
+f_zone_color(_dir, _state, _alpha) =>
+    base = _dir == DIR_SUPPORT ? color.lime : color.red
+    flipped = _state == STATE_FLIPPED
+    broken = _state == STATE_BROKEN
+    c = broken ? color.gray : flipped ? color.orange : base
+    color.new(c, _alpha)
+
+f_delete_drawings(_i) =>
+    b = array.get(zBox, _i)
+    l = array.get(zLabel, _i)
+    if not na(b)
+        box.delete(b)
+    if not na(l)
+        label.delete(l)
+
+f_remove_zone(_i) =>
+    f_delete_drawings(_i)
+    array.remove(zTop, _i)
+    array.remove(zBot, _i)
+    array.remove(zMid, _i)
+    array.remove(zDir, _i)
+    array.remove(zState, _i)
+    array.remove(zTouches, _i)
+    array.remove(zBirthBar, _i)
+    array.remove(zLastTouch, _i)
+    array.remove(zLastPivot, _i)
+    array.remove(zBox, _i)
+    array.remove(zLabel, _i)
+
+f_intervals_overlap(_topA, _botA, _topB, _botB, _tol) =>
+    not (_topA < _botB - _tol or _botA > _topB + _tol)
+
+f_zone_score(_i) =>
+    touches = array.get(zTouches, _i)
+    age = math.max(1, bar_index - array.get(zBirthBar, _i))
+    mid = array.get(zMid, _i)
+    distAtr = atr > 0 ? math.abs(close - mid) / atr : 999.0
+    recency = math.max(0.0, 35.0 * (1.0 - age / lookbackBars))
+    touchScore = math.min(45.0, touches * 9.0)
+    proximity = math.max(0.0, 25.0 * (1.0 - distAtr / 12.0))
+    statePenalty = array.get(zState, _i) == STATE_BROKEN ? 45.0 : 0.0
+    touchScore + recency + proximity - statePenalty
+
+f_rank(_i) =>
+    score = f_zone_score(_i)
+    r = 1
+    n = array.size(zMid)
+    if n > 0
+        for j = 0 to n - 1
+            if j != _i and f_zone_score(j) > score
+                r += 1
+    r
+
+f_add_or_merge_zone(_dir, _price, _pivotBar, _atrRef) =>
+    half = math.max(_atrRef * zoneAtrMult, _price * minZoneWidthPct)
+    top = _price + half
+    bot = _price - half
+    mid = _price
+    tol = math.max(_atrRef * mergeTolAtr, _price * mergeTolPct)
+    best = -1
+    bestDist = 10e10
+    n = array.size(zMid)
+    if n > 0
+        for i = 0 to n - 1
+            sameDir = array.get(zDir, i) == _dir
+            activeEnough = showBroken or array.get(zState, i) != STATE_BROKEN
+            inWindow = bar_index - array.get(zBirthBar, i) <= lookbackBars
+            zt = array.get(zTop, i)
+            zb = array.get(zBot, i)
+            zm = array.get(zMid, i)
+            closeEnough = math.abs(zm - mid) <= tol or f_intervals_overlap(zt, zb, top, bot, tol)
+            if sameDir and activeEnough and inWindow and closeEnough
+                d = math.abs(zm - mid)
+                if d < bestDist
+                    bestDist := d
+                    best := i
+    if best >= 0
+        oldTouches = array.get(zTouches, best)
+        newTouches = oldTouches + 1
+        oldMid = array.get(zMid, best)
+        newMid = (oldMid * oldTouches + mid) / newTouches
+        array.set(zTop, best, math.max(array.get(zTop, best), top))
+        array.set(zBot, best, math.min(array.get(zBot, best), bot))
+        array.set(zMid, best, newMid)
+        array.set(zTouches, best, newTouches)
+        array.set(zLastPivot, best, _pivotBar)
+        array.set(zState, best, STATE_ACTIVE)
+    else
+        array.push(zTop, top)
+        array.push(zBot, bot)
+        array.push(zMid, mid)
+        array.push(zDir, _dir)
+        array.push(zState, STATE_ACTIVE)
+        array.push(zTouches, 1)
+        array.push(zBirthBar, _pivotBar)
+        array.push(zLastTouch, _pivotBar)
+        array.push(zLastPivot, _pivotBar)
+        array.push(zBox, na)
+        array.push(zLabel, na)
+
+// -------------------- Ingest confirmed pivots --------------------
+if not na(ph)
+    f_add_or_merge_zone(DIR_RESIST, ph, bar_index - pivotLen, nz(atr[pivotLen], atr))
+
+if not na(pl)
+    f_add_or_merge_zone(DIR_SUPPORT, pl, bar_index - pivotLen, nz(atr[pivotLen], atr))
+
+// -------------------- Update lifecycle --------------------
+nZones = array.size(zMid)
+if nZones > 0
+    // Pine's `by` value must be positive; descending loops are inferred from start > end.
+    for i = nZones - 1 to 0
+        expired = bar_index - array.get(zBirthBar, i) > lookbackBars
+        overflow = array.size(zMid) > maxStoredZones and f_rank(i) > maxStoredZones
+        if expired or overflow
+            f_remove_zone(i)
+        else
+            top = array.get(zTop, i)
+            bot = array.get(zBot, i)
+            dir = array.get(zDir, i)
+            state = array.get(zState, i)
+            touched = high >= bot and low <= top
+            brokeSupport = dir == DIR_SUPPORT and close < bot - atr * breakAtr
+            brokeResist = dir == DIR_RESIST and close > top + atr * breakAtr
+            broke = brokeSupport or brokeResist
+            if state != STATE_BROKEN
+                if broke
+                    if allowFlips
+                        array.set(zDir, i, dir == DIR_SUPPORT ? DIR_RESIST : DIR_SUPPORT)
+                        array.set(zState, i, STATE_FLIPPED)
+                        array.set(zLastTouch, i, bar_index)
+                    else
+                        array.set(zState, i, STATE_BROKEN)
+                else if touched and bar_index - array.get(zLastTouch, i) >= touchGapBars
+                    array.set(zTouches, i, array.get(zTouches, i) + 1)
+                    array.set(zLastTouch, i, bar_index)
+
+// -------------------- Render on terminal bar --------------------
+if barstate.islast
+    nDraw = array.size(zMid)
+    if nDraw > 0
+        for i = 0 to nDraw - 1
+            visible = f_rank(i) <= maxVisibleZones and (showBroken or array.get(zState, i) != STATE_BROKEN)
+            b = array.get(zBox, i)
+            l = array.get(zLabel, i)
+            if visible
+                top = array.get(zTop, i)
+                bot = array.get(zBot, i)
+                mid = array.get(zMid, i)
+                dir = array.get(zDir, i)
+                state = array.get(zState, i)
+                touches = array.get(zTouches, i)
+                left = math.max(array.get(zBirthBar, i), bar_index - lookbackBars)
+                right = bar_index + extendBars
+                alpha = state == STATE_BROKEN ? 92 : state == STATE_FLIPPED ? 84 : 82
+                fill = f_zone_color(dir, state, alpha)
+                border = f_zone_color(dir, state, 35)
+                if na(b)
+                    b := box.new(left, top, right, bot, xloc=xloc.bar_index, bgcolor=fill, border_color=border)
+                    array.set(zBox, i, b)
+                else
+                    box.set_left(b, left)
+                    box.set_right(b, right)
+                    box.set_top(b, top)
+                    box.set_bottom(b, bot)
+                    box.set_bgcolor(b, fill)
+                    box.set_border_color(b, border)
+                if showLabels
+                    side = dir == DIR_SUPPORT ? "S" : "R"
+                    st = state == STATE_FLIPPED ? " flip" : state == STATE_BROKEN ? " broken" : ""
+                    txt = side + st + " • " + str.tostring(touches) + "t • " + str.tostring(math.round(f_zone_score(i)))
+                    if na(l)
+                        l := label.new(right, mid, txt, xloc=xloc.bar_index, style=label.style_label_left, textcolor=color.white, color=f_zone_color(dir, state, 20), size=size.small)
+                        array.set(zLabel, i, l)
+                    else
+                        label.set_x(l, right)
+                        label.set_y(l, mid)
+                        label.set_text(l, txt)
+                        label.set_color(l, f_zone_color(dir, state, 20))
+                        label.set_textcolor(l, color.white)
+                else if not na(l)
+                    label.delete(l)
+                    array.set(zLabel, i, na)
+            else
+                if not na(b)
+                    box.delete(b)
+                    array.set(zBox, i, na)
+                if not na(l)
+                    label.delete(l)
+                    array.set(zLabel, i, na)
