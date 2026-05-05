@@ -1,17 +1,17 @@
 # SR Selector Decomposition Notes 2026-05-05
 
 Scope:
-- additive diagnostics only
-- no selector doctrine change
+- additive diagnostics plus the doctrine fix from `liquidsniper/core/zone_selectors.py`
+- daily-major selector now enforces a selected-zone floor of `meaningful_touch_count >= 3`
 - local DB request date `2026-05-04` currently resolves to source candle `2026-03-31T00:00:00Z`
 
 Artifacts:
 - JSON: `artifacts/sr_selector_decomposition/btcusdt_1d_20260504_decomposition.json`
 - Markdown: `artifacts/sr_selector_decomposition/btcusdt_1d_20260504_decomposition.md`
 
-## Selected zones
+## Selected zones after 3-touch floor
 
-The canonical daily-major selector still resolves to six majors, and the decomposition path matches `select_daily_majors` exactly:
+The decomposition path matches `select_daily_majors` exactly after the touch-floor fix:
 
 | Rank | Zone id | Families | Full bounds | Core bounds | Touches | Selection |
 |---|---|---|---|---|---:|---:|
@@ -20,54 +20,49 @@ The canonical daily-major selector still resolves to six majors, and the decompo
 | 3 | `BTCUSDT:1D:base:961:support` | `base,reaction,structure` | `24581.00-42882.54` | `28076.00-30374.60` | 5 | 130.77 |
 | 4 | `BTCUSDT:1D:base:1586:support` | `base,reaction` | `102978.10-111160.00` | `107200.00-109732.30` | 6 | 127.33 |
 | 5 | `BTCUSDT:1D:base:1507:support` | `base,reaction` | `83063.90-88651.20` | `85570.80-85600.00` | 4 | 125.35 |
-| 6 | `BTCUSDT:1D:structure:flip_anchor:44:55:resistance` | `reaction,structure` | `63019.10-69198.70` | `64920.13-64986.11` | 1 | 122.59 |
+| 6 | `BTCUSDT:1D:base:1278:resistance` | `base` | `57093.00-59914.90` | `57727.93-59279.97` | 5 | 115.72 |
 
 ## Focus bands
 
 ### 60k band `58000-62000`
 
-- No exact `60k` major is selected.
-- The selected nearby major is broader support `48888.00-58144.50`, which only clips the bottom of this band.
-- A `reaction,structure` support candidate at `53750.00-60062.80` with 1 meaningful touch survived to distance collapse, then got demoted as too close to a stronger representative.
-- A pure base resistance candidate at `57093.00-59914.90` had 5 touches but lost in the local-band representative stage.
+- The old broad 50k support still clips the bottom of this band.
+- A base resistance candidate at `57093.00-59914.90` with 5 touches now becomes the current-regime coverage anchor.
+- The 1-touch `53750.00-60062.80` structure+reaction candidate is rejected by the daily-major touch floor.
 
 ### 65k band `63000-67000`
 
-- The selected zone is `BTCUSDT:1D:structure:flip_anchor:44:55:resistance`.
-- Full bounds are `63019.10-69198.70`, but the operator core is the narrow `64920.13-64986.11` pocket Redact called out.
-- It has only 1 meaningful touch, but it carries `reaction,structure` confluence and enters the final set through the current-regime coverage anchor step.
+- No 65k zone is selected after the fix.
+- `BTCUSDT:1D:structure:flip_anchor:44:55:resistance` still exists as a scored candidate, but it has only 1 meaningful touch and is rejected by the daily-major touch floor.
+- This directly addresses the flaw Redact called out: current-regime coverage can no longer rescue a one-touch zone into selected daily majors.
 
 ### 74k band `70000-78000`
 
 - No zone in this band is selected.
-- A `reaction,structure` support candidate at `73881.40-81148.10` exists with selection score `121.30`, but it is removed by distance collapse as too close to a stronger representative.
-- A pure reaction zone centered around `70523.54` has 96 meaningful touches, but its strength score is only `53.71`, so it fails the `min_strength >= 70` prefilter.
+- The `73881.40-81148.10` structure+reaction candidate is also rejected by the 3-touch selected-zone floor because it has only 1 meaningful touch.
+- The `70523.54` reaction zone still has 96 meaningful touches but low strength (`53.71`), so it remains rejected by the min-strength prefilter.
 
 ### 85k band `83000-88000`
 
-- The selected zone is `BTCUSDT:1D:base:1507:support`.
+- The selected zone remains `BTCUSDT:1D:base:1507:support`.
 - Full bounds are `83063.90-88651.20`, core bounds are `85570.80-85600.00`, and it carries 4 meaningful touches.
-- This zone looks consistent with current doctrine: confirmed, high-scoring, and retained through pocket consolidation.
+- This remains valid under the selected-zone floor.
 
 ### 107k-110k band `102000-112000`
 
-- The selected zone is `BTCUSDT:1D:base:1586:support`.
+- The selected zone remains `BTCUSDT:1D:base:1586:support`.
 - Full bounds are `102978.10-111160.00`, core bounds are `107200.00-109732.30`, with 6 meaningful touches.
-- Two structure-only candidates also overlap this area, but both lose in the local-band representative stage.
-- This band looks broadly reasonable under the current selector.
+- The nearby structure-only 1-touch candidates are now explicitly rejected by the touch floor.
 
-## Observed doctrine smells
+## Observed doctrine outcome
 
-- The `64.9k/65k` selected zone is a narrow core inside a much wider `63019.10-69198.70` envelope and only has 1 meaningful touch. It survives because structure+reaction confluence plus current-regime coverage logic can outrank local touch count.
-- The `74k` area has a structure+reaction candidate with a very strong selection score, but it still disappears at distance collapse because a stronger nearby representative occupies the same neighborhood.
-- The `70.5k` reaction candidate shows the opposite smell: very high touch count, but low strength. That implies the current reaction scoring is discounting those touches heavily because the interaction quality/body-respect/retest profile is poor.
-- The `85k` zone is selected with only 4 touches, which is lower than the old daily minimum-touch intuition but consistent with the current merged-family scoring path.
-- The `107k-110k` selection looks less suspicious than the mid-60k area because it combines broad support geography with 6 touches and no current-regime coverage rescue.
+- The selected daily-major set now has no zone below 3 meaningful touches.
+- The suspicious `64.9k/65k` zone is removed.
+- The 107k-110k zone is preserved, which matches the earlier qualitative review.
+- The replacement around 60k is a 5-touch base resistance coverage anchor, not another one-touch structure rescue.
 
-## Proposal-only next changes
+## Proposal-only next checks
 
-- Add explicit stage-demotion provenance to the canonical selector outputs, not just to this debug script, so band loss vs distance collapse vs coverage replacement are visible without a second pass.
-- Review whether the current-regime coverage rescue should have an extra floor for low-touch candidates, especially when the final selected core is much narrower than the macro envelope.
-- Review whether distance collapse is too aggressive around adjacent high-scoring candidates in the `60k-75k` region.
-- Review why the `70523.54` reaction zone can accumulate 96 meaningful touches yet still score only `53.71`; if that is doctrinally correct, surface the penalty components more explicitly.
-- Keep all of the above as proposal-only until a separate doctrine pass decides whether the current behavior is wrong or simply unintuitive.
+- Decide whether the selected-zone floor should stay hardcoded at 3 or become a caller-visible selector parameter.
+- Keep monitoring whether pure base-only replacements like `57093.00-59914.90` are doctrinally acceptable as daily current-regime coverage anchors.
+- Surface the selected-zone touch floor in any operator-facing SR selector docs so this invariant is explicit rather than remembered in chat.

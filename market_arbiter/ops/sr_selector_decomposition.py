@@ -33,6 +33,8 @@ DEFAULT_ASOF_DATE = "2026-05-04"
 DEFAULT_OUTPUT_JSON = "artifacts/sr_selector_decomposition/btcusdt_1d_20260504_decomposition.json"
 DEFAULT_OUTPUT_MD = "artifacts/sr_selector_decomposition/btcusdt_1d_20260504_decomposition.md"
 DEFAULT_FOCUS_BANDS = "58000-62000:60k,63000-67000:65k,70000-78000:74k,83000-88000:85k,102000-112000:108k"
+# Mirrored from liquidsniper.core.zone_selectors for artifact readability.
+DAILY_MAJOR_SELECTED_MIN_MEANINGFUL_TOUCHES = 3
 
 
 @dataclass(frozen=True)
@@ -141,6 +143,7 @@ def _candidate_export(
     *,
     selected_ids: set[str],
     confirmed_ids: set[str],
+    touch_floor_ids: set[str],
     prefilter_ids: set[str],
     band_ids: set[str],
     collapsed_ids: set[str],
@@ -166,6 +169,12 @@ def _candidate_export(
             reason = (
                 f"rejected before daily-major selector: status={zone.get('status') or 'unknown'} "
                 f"with {meaningful_touches} meaningful touches; minimum configured touches={cfg.daily_min_meaningful_touches}"
+            )
+        elif zone_id not in touch_floor_ids:
+            debug_bucket = "below_min_touches"
+            reason = (
+                f"rejected by daily-major touch floor: meaningful_touch_count={meaningful_touches} "
+                f"< {DAILY_MAJOR_SELECTED_MIN_MEANINGFUL_TOUCHES}"
             )
         elif zone_id not in prefilter_ids:
             debug_bucket = "below_min_strength"
@@ -246,6 +255,7 @@ def _candidate_export(
             },
             "stage_membership": {
                 "confirmed": zone_id in confirmed_ids,
+                "daily_major_touch_floor": zone_id in touch_floor_ids,
                 "prefilter_min_strength": zone_id in prefilter_ids,
                 "local_band_representative": zone_id in band_ids,
                 "distance_collapse": zone_id in collapsed_ids,
@@ -321,6 +331,7 @@ def _build_decomposition(
     from liquidsniper.core.zone_selectors import (  # type: ignore
         _apply_daily_current_regime_coverage,
         _apply_daily_operator_core,
+        _daily_major_has_min_touch_evidence,
         _consolidate_daily_selected_pockets,
         _daily_pocket_rank_key,
         apply_daily_soft_retest_weights,
@@ -345,7 +356,8 @@ def _build_decomposition(
 
     confirmed = [zone for zone in scored if zone.get("status") == "confirmed"]
     weighted = apply_daily_soft_retest_weights(confirmed, strict_mode=cfg.daily_require_first_retest_quality)
-    prefilter = [zone for zone in weighted if float(zone.get("strength_score") or 0.0) >= cfg.daily_min_strength]
+    touch_floor = [zone for zone in weighted if _daily_major_has_min_touch_evidence(zone)]
+    prefilter = [zone for zone in touch_floor if float(zone.get("strength_score") or 0.0) >= cfg.daily_min_strength]
     band = select_daily_local_band_representatives(
         prefilter,
         max_zones=max(cfg.daily_max_zones * 2, cfg.daily_max_zones),
@@ -394,6 +406,7 @@ def _build_decomposition(
     decomposed_ids = [str(zone.get("zone_id") or "") for zone in sorted(final_selected, key=lambda zone: int(zone.get("selector_rank") or 9999))]
 
     confirmed_ids = _stage_id_set(weighted)
+    touch_floor_ids = _stage_id_set(touch_floor)
     prefilter_ids = _stage_id_set(prefilter)
     band_ids = _stage_id_set(band)
     collapsed_ids = _stage_id_set(collapsed)
@@ -432,6 +445,7 @@ def _build_decomposition(
             enriched,
             selected_ids=final_selected_ids,
             confirmed_ids=confirmed_ids,
+            touch_floor_ids=touch_floor_ids,
             prefilter_ids=prefilter_ids,
             band_ids=band_ids,
             collapsed_ids=collapsed_ids,
@@ -461,6 +475,7 @@ def _build_decomposition(
                 "merged_candidates": len(merged),
                 "scored_candidates": len(scored),
                 "confirmed_candidates": len(weighted),
+                "touch_floor_candidates": len(touch_floor),
                 "prefilter_candidates": len(prefilter),
                 "local_band_candidates": len(band),
                 "distance_collapsed_candidates": len(collapsed),
@@ -470,6 +485,7 @@ def _build_decomposition(
             },
             "selector_stages": {
                 "confirmed_ids": sorted(confirmed_ids),
+                "touch_floor_ids": sorted(touch_floor_ids),
                 "prefilter_ids": sorted(prefilter_ids),
                 "local_band_ids": sorted(band_ids),
                 "distance_collapsed_ids": sorted(collapsed_ids),
@@ -553,6 +569,7 @@ def _markdown(dataset: Mapping[str, Any], json_path: Path) -> str:
         f"- Reaction candidates: `{counts.get('reaction_candidates')}`",
         f"- Merged candidates: `{counts.get('merged_candidates')}`",
         f"- Confirmed weighted candidates: `{counts.get('confirmed_candidates')}`",
+        f"- Touch-floor candidates: `{counts.get('touch_floor_candidates')}`",
         f"- Prefilter candidates: `{counts.get('prefilter_candidates')}`",
         f"- Selected daily majors: `{counts.get('selected_daily_majors')}`",
         "",
@@ -687,7 +704,7 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
             "requested_asof_timestamp": asof_dt.isoformat().replace("+00:00", "Z"),
             "resolved_asof_timestamp": last["timestamp"],
             "resolved_asof_ts_open_ms": last["ts_open_ms"],
-            "config": asdict(cfg),
+            "config": {**asdict(cfg), "daily_major_selected_min_meaningful_touches": DAILY_MAJOR_SELECTED_MIN_MEANINGFUL_TOUCHES},
             "focus_bands": [asdict(band) for band in focus_bands],
             "canonical_source": {
                 "liquidsniper_root": str(liquidsniper_root),
