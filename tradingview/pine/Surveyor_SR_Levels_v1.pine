@@ -15,7 +15,7 @@ showScaffoldNotice = input.bool(true, "Show scaffold notice when no selected zon
 renderSelectedLimit = input.int(8, "Render cap for selected zones", minval=1, maxval=8)
 renderExtendBars = input.int(200, "Extend rendered zones right bars", minval=10, maxval=600)
 minHistoryBars = input.int(365, "Minimum daily bars for authoritative parity", minval=100, maxval=5000)
-candidateLookbackBars = input.int(365, "Candidate generation lookback bars", minval=100, maxval=1500)
+candidateLookbackBars = input.int(3000, "Candidate generation lookback bars", minval=365, maxval=3000)
 maxCandidateZones = input.int(260, "Candidate store cap", minval=50, maxval=500)
 
 // -------------------- User-tunable visuals --------------------
@@ -138,9 +138,10 @@ var string[] zoneMergeCandidateBaseScores = array.new_string()
 var string[] zoneMergeCandidateFamilies = array.new_string()
 
 // Draw objects are aligned 1:1 with the zone arrays above.
+var int candidateBarsUsed = 0
 var box[] zoneBox = array.new_box()
 var label[] zoneLabel = array.new_label()
-var table debugTable = table.new(position.top_right, 2, 11, frame_color=color.new(color.silver, 65), border_width=1)
+var table debugTable = table.new(position.top_right, 2, 12, frame_color=color.new(color.silver, 65), border_width=1)
 
 // -------------------- Helpers --------------------
 f_zone_store_size() =>
@@ -1700,7 +1701,8 @@ f_build_reaction_candidates(_bars, _atrRef) =>
 f_build_candidate_families() =>
     f_clear_zone_store()
     barsReady = bar_index + 1
-    barsToUse = math.min(math.min(candidateLookbackBars, barsReady), 5000)
+    barsToUse = math.min(math.min(candidateLookbackBars, barsReady), 3000)
+    candidateBarsUsed := barsToUse
     atrRef = f_local_atr(barsToUse)
     sCount = barsToUse >= minHistoryBars ? f_build_structure_candidates(barsToUse, atrRef) : 0
     bCount = barsToUse >= minHistoryBars ? f_build_base_candidates(barsToUse, atrRef) : 0
@@ -1783,8 +1785,10 @@ f_update_debug_table(_visibleCount) =>
         table.cell(debugTable, 1, 8, str.tostring(_visibleCount), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
         table.cell(debugTable, 0, 9, "Zone store size", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
         table.cell(debugTable, 1, 9, str.tostring(f_zone_store_size()), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
-        table.cell(debugTable, 0, 10, "Note", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
-        table.cell(debugTable, 1, 10, "Daily-major selector ranks selected operator-core zones.", bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 10, "Lookback used", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 10, str.tostring(candidateBarsUsed), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 11, "Note", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 11, "Daily-major selector ranks selected operator-core zones.", bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
 
 var label scaffoldNotice = na
 
