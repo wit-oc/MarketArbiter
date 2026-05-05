@@ -1599,7 +1599,7 @@ f_append_reaction_cluster(_clusterId, _clusterPrices, _clusterKinds, _bars, _atr
                         n2 = f_c(i + 2, _bars)
                         deviationRetest := (cClose < zoneLo and n1 > zoneHi and n2 > mid) or (cClose > zoneHi and n1 < zoneLo and n2 < mid)
                     break
-        zoneWidthBps = f_zone_width_bps(zoneLo, zoneHi, mid)
+        reactionZoneWidthBps = f_zone_width_bps(zoneLo, zoneHi, mid)
         carryNorm = f_clamp01(carryScore / 100.0)
         bodyNorm = f_clamp01(bodyRespectScore / 100.0)
         touchComponent = 18.0 * f_log_norm(meaningfulCount, 40.0)
@@ -1614,7 +1614,7 @@ f_append_reaction_cluster(_clusterId, _clusterPrices, _clusterKinds, _bars, _atr
         retestComponent = firstRetestResult == "reject" ? 12.0 : firstRetestResult == "deviation" ? 7.0 : 0.0
         touchExcess = f_clamp01((touchLoad - 10.0) / 32.0)
         spentPenalty = 30.0 * touchExcess * (1.0 - (0.7 * reactionEfficiency + 0.2 * carryNorm + 0.1 * bodyNorm))
-        widthPenalty = 12.0 * f_clamp01((zoneWidthBps - 300.0) / 220.0)
+        widthPenalty = 12.0 * f_clamp01((reactionZoneWidthBps - 300.0) / 220.0)
         chopPenalty = 12.0 * f_clamp01((55.0 - bodyRespectScore) / 55.0)
         strengthRaw = 14.0 + touchComponent + pivotComponent + reactionComponent + carryComponent + bodyComponent + efficiencyComponent + retestComponent - spentPenalty - widthPenalty - chopPenalty
         strength = f_clamp01(strengthRaw / 100.0) * 100.0
@@ -1770,11 +1770,11 @@ f_update_debug_table(_visibleCount) =>
 
 var label scaffoldNotice = na
 
-f_update_scaffold_notice(_visibleCount, _currentNotice) =>
+f_update_scaffold_notice(_visibleCount, _currentNotice, _noticeAtr, _isLastBar) =>
     nextNotice = _currentNotice
-    if showScaffoldNotice and _visibleCount == 0
+    if _isLastBar and showScaffoldNotice and _visibleCount == 0
         noticeText = bar_index + 1 < minHistoryBars ? "Surveyor SR parity\nWaiting for min history bars." : "Surveyor SR parity daily-major selector\nNo zones passed selector filters."
-        y = high + math.max(ta.atr(14), syminfo.mintick) * 0.6
+        y = high + math.max(_noticeAtr, syminfo.mintick) * 0.6
         if na(nextNotice)
             nextNotice := label.new(bar_index, y, noticeText, xloc=xloc.bar_index, style=label.style_label_down, textcolor=NOTICE_TEXT, color=NOTICE_BG, size=size.small)
         else
@@ -1790,6 +1790,7 @@ f_update_scaffold_notice(_visibleCount, _currentNotice) =>
     nextNotice
 
 // -------------------- Terminal-bar rendering --------------------
+noticeAtr = ta.atr(14)
 if barstate.islast
     selectedZoneCount := 0
     [builtStructureCount, builtBaseCount, builtReactionCount, builtMergedCount, builtScoredCount] = f_build_candidate_families()
@@ -1801,4 +1802,4 @@ if barstate.islast
     visibleCount = f_render_selected_zones()
     selectedZoneCount := visibleCount
     f_update_debug_table(visibleCount)
-    scaffoldNotice := f_update_scaffold_notice(visibleCount, scaffoldNotice)
+scaffoldNotice := f_update_scaffold_notice(selectedZoneCount, scaffoldNotice, noticeAtr, barstate.islast)
