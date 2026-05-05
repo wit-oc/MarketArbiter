@@ -1,5 +1,5 @@
 //@version=5
-indicator("Surveyor SR Levels v1 — parity scaffold", overlay=true, scale=scale.none, format=format.price, max_bars_back=6000, max_boxes_count=80, max_labels_count=120)
+indicator("Surveyor SR Levels v1 — parity scaffold", overlay=true, scale=scale.none, format=format.price, max_bars_back=3000, max_boxes_count=80, max_labels_count=120)
 
 // T6 daily-major selector port.
 // This file ports the Surveyor/MarketArbiter structure/base/reaction candidate families into
@@ -437,20 +437,20 @@ f_side_aligned(_originKind, _relation, _currentRole, _side) =>
     f_origin_aligned(_originKind, _side) and alignedRole and relationOk
 
 f_side_lifecycle(_i, _price, _side, _atrRef) =>
-    low = array.get(zoneLow, _i)
-    high = array.get(zoneHigh, _i)
-    relation = f_relation_for_price(low, high, _price)
+    zoneLowValue = array.get(zoneLow, _i)
+    zoneHighValue = array.get(zoneHigh, _i)
+    relation = f_relation_for_price(zoneLowValue, zoneHighValue, _price)
     currentRole = f_current_role_from_relation(relation)
     originKind = array.get(zoneOriginKind, _i)
     expectedRelation = _side == "buy" ? "above" : "below"
-    width = math.max(high - low, 0.0)
+    width = math.max(zoneHighValue - zoneLowValue, 0.0)
     atrSafe = math.max(_atrRef, 1e-9)
-    distance = _price < low ? low - _price : _price > high ? _price - high : 0.0
+    distance = _price < zoneLowValue ? zoneLowValue - _price : _price > zoneHighValue ? _price - zoneHighValue : 0.0
     distanceAtr = distance / atrSafe
     widthAtr = width / atrSafe
     penetrationAtr = 0.0
     if relation == "inside"
-        penetrationAtr := _side == "buy" ? (high - _price) / atrSafe : ( _price - low) / atrSafe
+        penetrationAtr := _side == "buy" ? (zoneHighValue - _price) / atrSafe : (_price - zoneLowValue) / atrSafe
     oppositeRelation = expectedRelation == "above" ? "below" : "above"
     lifecycle = "transition"
     if not f_origin_aligned(originKind, _side)
@@ -472,9 +472,9 @@ f_apply_role_classification(_i, _lastPrice, _atrRef) =>
         array.set(zoneCurrentRole, _i, "neutral")
         0.0
     else
-        low = array.get(zoneLow, _i)
-        high = array.get(zoneHigh, _i)
-        relation = f_relation_for_price(low, high, _lastPrice)
+        zoneLowValue = array.get(zoneLow, _i)
+        zoneHighValue = array.get(zoneHigh, _i)
+        relation = f_relation_for_price(zoneLowValue, zoneHighValue, _lastPrice)
         currentRole = f_current_role_from_relation(relation)
         originKind = array.get(zoneOriginKind, _i) == "" ? array.get(zoneKind, _i) : array.get(zoneOriginKind, _i)
         buyState = f_side_lifecycle(_i, _lastPrice, "buy", _atrRef)
@@ -494,21 +494,21 @@ f_apply_role_classification(_i, _lastPrice, _atrRef) =>
         lifecycleBonus
 
 f_apply_operator_core(_i, _atrRef) =>
-    low = array.get(zoneLow, _i)
-    high = array.get(zoneHigh, _i)
+    zoneLowValue = array.get(zoneLow, _i)
+    zoneHighValue = array.get(zoneHigh, _i)
     mid = array.get(zoneMid, _i)
-    span = math.max(high - low, 0.0)
+    span = math.max(zoneHighValue - zoneLowValue, 0.0)
     if span <= 0.0
-        array.set(zoneCoreLow, _i, low)
-        array.set(zoneCoreHigh, _i, high)
+        array.set(zoneCoreLow, _i, zoneLowValue)
+        array.set(zoneCoreHigh, _i, zoneHighValue)
         array.set(zoneCoreMid, _i, mid)
         array.set(zoneCoreDefinition, _i, "invalid_full_bounds")
     else
         tf = array.get(zoneTf, _i)
         isDailyTf = timeframe.isdaily or tf == "1D" or tf == "D"
         if not isDailyTf
-            array.set(zoneCoreLow, _i, low)
-            array.set(zoneCoreHigh, _i, high)
+            array.set(zoneCoreLow, _i, zoneLowValue)
+            array.set(zoneCoreHigh, _i, zoneHighValue)
             array.set(zoneCoreMid, _i, mid)
             array.set(zoneCoreDefinition, _i, "macro")
         else
@@ -518,11 +518,11 @@ f_apply_operator_core(_i, _atrRef) =>
             if _atrRef > 0.0
                 targetSpan := math.max(math.min(span, _atrRef * 2.5), targetSpan)
             targetSpan := math.min(targetSpan, span)
-            coreLow = math.max(low, mid - targetSpan * 0.5)
-            coreHigh = math.min(high, mid + targetSpan * 0.5)
+            coreLow = math.max(zoneLowValue, mid - targetSpan * 0.5)
+            coreHigh = math.min(zoneHighValue, mid + targetSpan * 0.5)
             if coreHigh <= coreLow
-                coreLow := low
-                coreHigh := high
+                coreLow := zoneLowValue
+                coreHigh := zoneHighValue
             array.set(zoneCoreLow, _i, coreLow)
             array.set(zoneCoreHigh, _i, coreHigh)
             array.set(zoneCoreMid, _i, (coreLow + coreHigh) * 0.5)
@@ -533,9 +533,9 @@ f_score_merged_zone(_i, _atrRef, _lastPrice) =>
     reaction = na(array.get(zoneReactionScore, _i)) ? 0.0 : array.get(zoneReactionScore, _i)
     efficiency = na(array.get(zoneReactionEfficiencyScore, _i)) ? 0.0 : array.get(zoneReactionEfficiencyScore, _i)
     carry = na(array.get(zoneCarryScore, _i)) ? 0.0 : array.get(zoneCarryScore, _i)
-    low = array.get(zoneLow, _i)
-    high = array.get(zoneHigh, _i)
-    width = math.max(high - low, 0.0)
+    zoneLowValue = array.get(zoneLow, _i)
+    zoneHighValue = array.get(zoneHigh, _i)
+    width = math.max(zoneHighValue - zoneLowValue, 0.0)
     widthAtr = _atrRef > 0.0 ? width / _atrRef : 0.0
     baseScore = 0.54 * strength + 0.16 * reaction + 0.16 * efficiency + 0.10 * carry
     widthBonus = _atrRef > 0.0 ? f_clamp((1.2 - widthAtr) * 4.0, -10.0, 8.0) : 0.0
@@ -997,10 +997,10 @@ f_select_spatially_diverse_zones(_zones) =>
     selected
 
 f_apply_daily_operator_core(_i) =>
-    low = array.get(zoneLow, _i)
-    high = array.get(zoneHigh, _i)
+    zoneLowValue = array.get(zoneLow, _i)
+    zoneHighValue = array.get(zoneHigh, _i)
     mid = array.get(zoneMid, _i)
-    macroWidth = high - low
+    macroWidth = zoneHighValue - zoneLowValue
     if macroWidth <= 0.0
         0
     else
@@ -1120,9 +1120,9 @@ f_consolidate_daily_selected_pockets(_zones) =>
     reps
 
 f_daily_macro_position(_i, _referencePrice) =>
-    low = array.get(zoneLow, _i)
-    high = array.get(zoneHigh, _i)
-    high < _referencePrice ? "below_price" : low > _referencePrice ? "above_price" : "contains_price"
+    zoneLowValue = array.get(zoneLow, _i)
+    zoneHighValue = array.get(zoneHigh, _i)
+    zoneHighValue < _referencePrice ? "below_price" : zoneLowValue > _referencePrice ? "above_price" : "contains_price"
 
 f_current_regime_coverage_add(_selected, _candidates, _referencePrice) =>
     selected = array.copy(_selected)
@@ -1770,22 +1770,24 @@ f_update_debug_table(_visibleCount) =>
 
 var label scaffoldNotice = na
 
-f_update_scaffold_notice(_visibleCount) =>
+f_update_scaffold_notice(_visibleCount, _currentNotice) =>
+    nextNotice = _currentNotice
     if showScaffoldNotice and _visibleCount == 0
         noticeText = bar_index + 1 < minHistoryBars ? "Surveyor SR parity\nWaiting for min history bars." : "Surveyor SR parity daily-major selector\nNo zones passed selector filters."
         y = high + math.max(ta.atr(14), syminfo.mintick) * 0.6
-        if na(scaffoldNotice)
-            scaffoldNotice := label.new(bar_index, y, noticeText, xloc=xloc.bar_index, style=label.style_label_down, textcolor=NOTICE_TEXT, color=NOTICE_BG, size=size.small)
+        if na(nextNotice)
+            nextNotice := label.new(bar_index, y, noticeText, xloc=xloc.bar_index, style=label.style_label_down, textcolor=NOTICE_TEXT, color=NOTICE_BG, size=size.small)
         else
-            label.set_x(scaffoldNotice, bar_index)
-            label.set_y(scaffoldNotice, y)
-            label.set_text(scaffoldNotice, noticeText)
-            label.set_textcolor(scaffoldNotice, NOTICE_TEXT)
-            label.set_color(scaffoldNotice, NOTICE_BG)
+            label.set_x(nextNotice, bar_index)
+            label.set_y(nextNotice, y)
+            label.set_text(nextNotice, noticeText)
+            label.set_textcolor(nextNotice, NOTICE_TEXT)
+            label.set_color(nextNotice, NOTICE_BG)
     else
-        if not na(scaffoldNotice)
-            label.delete(scaffoldNotice)
-            scaffoldNotice := na
+        if not na(nextNotice)
+            label.delete(nextNotice)
+            nextNotice := na
+    nextNotice
 
 // -------------------- Terminal-bar rendering --------------------
 if barstate.islast
@@ -1799,4 +1801,4 @@ if barstate.islast
     visibleCount = f_render_selected_zones()
     selectedZoneCount := visibleCount
     f_update_debug_table(visibleCount)
-    f_update_scaffold_notice(visibleCount)
+    scaffoldNotice := f_update_scaffold_notice(visibleCount, scaffoldNotice)
