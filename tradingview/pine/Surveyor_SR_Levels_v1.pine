@@ -1,5 +1,5 @@
 //@version=5
-indicator("Surveyor SR Levels v1", overlay=true, format=format.price, max_bars_back=3000, max_boxes_count=80, max_labels_count=120)
+indicator("Surveyor SR Levels v1", overlay=true, scale=scale.none, format=format.price, max_bars_back=3000, max_boxes_count=80, max_labels_count=120)
 
 // T6 daily-major selector port.
 // This file ports the Surveyor/MarketArbiter structure/base/reaction candidate families into
@@ -18,16 +18,34 @@ minHistoryBars = input.int(365, "Minimum daily bars for authoritative parity", m
 candidateLookbackBars = input.int(365, "Candidate generation lookback bars", minval=100, maxval=1500)
 maxCandidateZones = input.int(260, "Candidate store cap", minval=50, maxval=500)
 
-// -------------------- Neutral visuals --------------------
-ZONE_FILL = color.new(color.silver, 88)
-ZONE_BORDER = color.new(color.silver, 42)
-LABEL_BG = color.new(color.black, 20)
-LABEL_TEXT = color.white
-NOTICE_BG = color.new(color.orange, 15)
-NOTICE_TEXT = color.white
-TABLE_BG = color.new(color.black, 0)
-TABLE_HEADER_BG = color.new(color.silver, 78)
-TABLE_VALUE_BG = color.new(color.black, 82)
+// -------------------- User-tunable visuals --------------------
+zoneFillBaseColor = input.color(color.aqua, "Zone fill color", group="Visuals")
+zoneFillTransparency = input.int(86, "Zone fill transparency", minval=0, maxval=100, group="Visuals")
+zoneBorderBaseColor = input.color(color.aqua, "Zone border color", group="Visuals")
+zoneBorderTransparency = input.int(25, "Zone border transparency", minval=0, maxval=100, group="Visuals")
+zoneLabelTextColor = input.color(color.white, "Zone label text color", group="Visuals")
+zoneLabelBgColor = input.color(color.black, "Zone label background", group="Visuals")
+zoneLabelBgTransparency = input.int(15, "Zone label background transparency", minval=0, maxval=100, group="Visuals")
+debugTableTextColor = input.color(color.white, "Debug table text color", group="Visuals")
+debugTableBgColor = input.color(color.black, "Debug table background", group="Visuals")
+debugTableBgTransparency = input.int(8, "Debug table background transparency", minval=0, maxval=100, group="Visuals")
+debugTableValueTransparency = input.int(76, "Debug table value transparency", minval=0, maxval=100, group="Visuals")
+debugTableHeaderColor = input.color(color.silver, "Debug table header color", group="Visuals")
+debugTableHeaderTransparency = input.int(72, "Debug table header transparency", minval=0, maxval=100, group="Visuals")
+noticeTextColor = input.color(color.white, "Notice text color", group="Visuals")
+noticeBgColor = input.color(color.orange, "Notice background", group="Visuals")
+noticeBgTransparency = input.int(15, "Notice background transparency", minval=0, maxval=100, group="Visuals")
+
+ZONE_FILL = color.new(zoneFillBaseColor, zoneFillTransparency)
+ZONE_BORDER = color.new(zoneBorderBaseColor, zoneBorderTransparency)
+LABEL_BG = color.new(zoneLabelBgColor, zoneLabelBgTransparency)
+LABEL_TEXT = zoneLabelTextColor
+NOTICE_BG = color.new(noticeBgColor, noticeBgTransparency)
+NOTICE_TEXT = noticeTextColor
+TABLE_BG = color.new(debugTableBgColor, debugTableBgTransparency)
+TABLE_HEADER_BG = color.new(debugTableHeaderColor, debugTableHeaderTransparency)
+TABLE_VALUE_BG = color.new(debugTableBgColor, debugTableValueTransparency)
+TABLE_TEXT = debugTableTextColor
 
 // -------------------- Locked SR defaults --------------------
 DAILY_CLUSTER_EPS = 1.10
@@ -1745,28 +1763,28 @@ f_render_selected_zones() =>
 
 f_update_debug_table(_visibleCount) =>
     if showDebugTable
-        table.cell(debugTable, 0, 0, "Field", bgcolor=TABLE_HEADER_BG, text_color=color.black)
-        table.cell(debugTable, 1, 0, "Value", bgcolor=TABLE_HEADER_BG, text_color=color.black)
-        table.cell(debugTable, 0, 1, "Stage", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 1, "T6 daily selector port", bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 2, "Timeframe", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 2, timeframe.period + (timeframe.isdaily ? "" : " (expect 1D)"), bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 3, "Bars loaded", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 3, str.tostring(bar_index + 1), bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 4, "Structure cands", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 4, str.tostring(structureCandidateCount), bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 5, "Base cands", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 5, str.tostring(baseCandidateCount), bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 6, "Reaction cands", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 6, str.tostring(reactionCandidateCount), bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 7, "Merged / scored", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 7, str.tostring(mergedZoneCount) + " / " + str.tostring(scoredZoneCount), bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 8, "Selected visible", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 8, str.tostring(_visibleCount), bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 9, "Zone store size", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 9, str.tostring(f_zone_store_size()), bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 0, 10, "Note", bgcolor=TABLE_BG, text_color=LABEL_TEXT)
-        table.cell(debugTable, 1, 10, "Daily-major selector ranks selected operator-core zones.", bgcolor=TABLE_VALUE_BG, text_color=LABEL_TEXT)
+        table.cell(debugTable, 0, 0, "Field", bgcolor=TABLE_HEADER_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 0, "Value", bgcolor=TABLE_HEADER_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 1, "Stage", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 1, "T6 daily selector port", bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 2, "Timeframe", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 2, timeframe.period + (timeframe.isdaily ? "" : " (expect 1D)"), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 3, "Bars loaded", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 3, str.tostring(bar_index + 1), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 4, "Structure cands", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 4, str.tostring(structureCandidateCount), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 5, "Base cands", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 5, str.tostring(baseCandidateCount), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 6, "Reaction cands", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 6, str.tostring(reactionCandidateCount), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 7, "Merged / scored", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 7, str.tostring(mergedZoneCount) + " / " + str.tostring(scoredZoneCount), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 8, "Selected visible", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 8, str.tostring(_visibleCount), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 9, "Zone store size", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 9, str.tostring(f_zone_store_size()), bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 0, 10, "Note", bgcolor=TABLE_BG, text_color=TABLE_TEXT)
+        table.cell(debugTable, 1, 10, "Daily-major selector ranks selected operator-core zones.", bgcolor=TABLE_VALUE_BG, text_color=TABLE_TEXT)
 
 var label scaffoldNotice = na
 
