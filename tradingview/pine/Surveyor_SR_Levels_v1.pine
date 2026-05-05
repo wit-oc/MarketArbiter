@@ -1,5 +1,5 @@
 //@version=5
-indicator("Surveyor SR Levels v1 — parity scaffold", overlay=true, scale=scale.none, format=format.price, max_bars_back=3000, max_boxes_count=80, max_labels_count=120)
+indicator("Surveyor SR Levels v1", overlay=true, format=format.price, max_bars_back=3000, max_boxes_count=80, max_labels_count=120)
 
 // T6 daily-major selector port.
 // This file ports the Surveyor/MarketArbiter structure/base/reaction candidate families into
