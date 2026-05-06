@@ -61,7 +61,7 @@ From `CanonicalSurveyorConfig`:
 | `discovery_cadence_bars` | `7` | Used by replay profile generation; Pine live display may recompute every bar, but fixtures should compare at as-of dates matching this cadence where relevant. |
 | `daily_cluster_eps` | `1.10` | Passed to all three candidate generators; reaction family uses it as ATR-normalized pivot cluster epsilon. |
 | `daily_reaction_atr_min` | `0.60` | Passed to reaction/base/structure call seam; reaction lifecycle uses it as minimum meaningful reaction ATR. |
-| `daily_min_meaningful_touches` | `5` | Confirmation threshold for reaction-family zones. |
+| `daily_min_meaningful_touches` | `3` | Confirmation threshold for reaction-family zones and selected daily-major touch floor. |
 | `daily_min_zone_separation_bps` | `250.0` | Selector spacing threshold; also seeds wider macro-pocket thresholds. |
 | `daily_min_strength` | `70.0` | Daily-major prefilter is on `strength_score`, not `selection_score`. |
 | `daily_max_zones` | `8` | Renderer should cap selected daily-major operator-core zones at 8. |
@@ -124,7 +124,7 @@ Key defaults as called by daily-major path:
 - `pivot_k = 3` default.
 - `cluster_eps = 1.10` from `daily_cluster_eps`.
 - `reaction_atr_min = 0.60` from `daily_reaction_atr_min`.
-- `min_meaningful_touches = 5` from `daily_min_meaningful_touches`.
+- `min_meaningful_touches = 3` from `daily_min_meaningful_touches`.
 - ATR is `local_atr(candles, period=14)`.
 - Pivot extraction requires `2*k + 1` candles and uses high >= window max for resistance, low <= window min for support.
 - Cluster width floor is `max(mid * 0.0005, atr * 0.25)` after 20/80 price quantiles.
@@ -194,6 +194,7 @@ Operator-core derivation exists in two places:
    - If arbitration has at least two candidate intervals, use overlap of strong intervals (`score >= top_score*0.82`), else top two; definition `overlap_density_core`.
    - If no useful overlap, use representative family bounds; if core is >= 90% of macro width, fall back to midpoint narrowed core.
    - Fallback midpoint narrowed core uses `half_width = macro_width * 0.275` and definition `midpoint_narrowed_core`.
+   - Final Daily operator core enforces a minimum actionable width of `max(0.20% price, 0.20*ATR)` clipped to macro width; overlap seams narrower than this are expanded and tagged with `_width_floored`.
 
 Renderer rule for this initiative: render the final `core_low/core_high/core_mid` returned by `select_daily_majors`; expose full macro bounds as debug only.
 
@@ -218,7 +219,7 @@ Exact sequence:
      - `-0.06` if pure base-only;
      - clamp `[0.88, 1.12]`.
    - daily `selection_score = strength*retest_weight*provenance_weight + 0.08*reaction + 0.16*efficiency + 0.06*carry + 0.10*body_respect`.
-3. Prefilter by `strength_score >= 70.0`.
+3. Prefilter by `meaningful_touch_count >= 3` and `strength_score >= 70.0`.
 4. `select_daily_local_band_representatives` with `band_span_bps = max(min_zone_separation_bps*2.6, 1100.0)`, max zones `16` for default `8`.
 5. `collapse_zones_by_distance` using `zone_rank_key`, rejecting mids closer than `250 bps`, cap `8`.
 6. `select_spatially_diverse_zones`, cap `8`.

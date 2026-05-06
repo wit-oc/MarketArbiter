@@ -1,8 +1,9 @@
 # SR Selector Decomposition Notes 2026-05-05
 
 Scope:
-- additive diagnostics plus the doctrine fix from `liquidsniper/core/zone_selectors.py`
+- additive diagnostics plus doctrine fixes from `liquidsniper/core/zone_selectors.py`
 - daily-major selector now enforces a selected-zone floor of `meaningful_touch_count >= 3`
+- daily operator cores now enforce a width floor of `max(0.20% price, 0.20*ATR)` so family-overlap seams do not become fake-precise trade bands
 - local DB request date `2026-05-04` currently resolves to source candle `2026-03-31T00:00:00Z`
 
 Artifacts:
@@ -19,7 +20,7 @@ The decomposition path matches `select_daily_majors` exactly after the touch-flo
 | 2 | `BTCUSDT:1D:base:1087:support` | `base,reaction,structure` | `48888.00-58144.50` | `50512.70-51316.90` | 4 | 133.06 |
 | 3 | `BTCUSDT:1D:base:961:support` | `base,reaction,structure` | `24581.00-42882.54` | `28076.00-30374.60` | 5 | 130.77 |
 | 4 | `BTCUSDT:1D:base:1586:support` | `base,reaction` | `102978.10-111160.00` | `107200.00-109732.30` | 6 | 127.33 |
-| 5 | `BTCUSDT:1D:base:1507:support` | `base,reaction` | `83063.90-88651.20` | `85570.80-85600.00` | 4 | 125.35 |
+| 5 | `BTCUSDT:1D:base:1507:support` | `base,reaction` | `83063.90-88651.20` | `85314.58-85856.22` | 4 | 125.35 |
 | 6 | `BTCUSDT:1D:base:1278:resistance` | `base` | `57093.00-59914.90` | `57727.93-59279.97` | 5 | 115.72 |
 
 ## Focus bands
@@ -45,7 +46,8 @@ The decomposition path matches `select_daily_majors` exactly after the touch-flo
 ### 85k band `83000-88000`
 
 - The selected zone remains `BTCUSDT:1D:base:1507:support`.
-- Full bounds are `83063.90-88651.20`, core bounds are `85570.80-85600.00`, and it carries 4 meaningful touches.
+- Full bounds are `83063.90-88651.20`, core bounds are `85314.58-85856.22`, and it carries 4 meaningful touches.
+- The raw base/reaction overlap seam was `85570.80-85600.00`; it is now expanded by the Daily operator-core width floor rather than displayed as a fake-precise trade band.
 - This remains valid under the selected-zone floor.
 
 ### 107k-110k band `102000-112000`
@@ -57,12 +59,13 @@ The decomposition path matches `select_daily_majors` exactly after the touch-flo
 ## Observed doctrine outcome
 
 - The selected daily-major set now has no zone below 3 meaningful touches.
+- Daily operator cores no longer collapse to sub-actionable overlap seams.
 - The suspicious `64.9k/65k` zone is removed.
 - The 107k-110k zone is preserved, which matches the earlier qualitative review.
 - The replacement around 60k is a 5-touch base resistance coverage anchor, not another one-touch structure rescue.
 
 ## Proposal-only next checks
 
-- Decide whether the selected-zone floor should stay hardcoded at 3 or become a caller-visible selector parameter.
+- Decide whether the selected-zone floor and operator-core width floor should stay hardcoded or become caller-visible selector parameters.
 - Keep monitoring whether pure base-only replacements like `57093.00-59914.90` are doctrinally acceptable as daily current-regime coverage anchors.
 - Surface the selected-zone touch floor in any operator-facing SR selector docs so this invariant is explicit rather than remembered in chat.

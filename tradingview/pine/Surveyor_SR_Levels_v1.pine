@@ -50,7 +50,9 @@ TABLE_TEXT = debugTableTextColor
 // -------------------- Locked SR defaults --------------------
 DAILY_CLUSTER_EPS = 1.10
 DAILY_REACTION_ATR_MIN = 0.60
-DAILY_MIN_MEANINGFUL_TOUCHES = 5
+DAILY_MIN_MEANINGFUL_TOUCHES = 3
+DAILY_OPERATOR_CORE_MIN_WIDTH_PCT = 0.002
+DAILY_OPERATOR_CORE_MIN_WIDTH_ATR_MULT = 0.20
 STRUCTURE_SEED_POLICY_VERSION = "zone_engine_v3_structure_seed_rules_v1"
 V3A_CONTRACT = "zone_engine_v3a"
 V3B_CONTRACT = "zone_engine_v3b"
@@ -1088,11 +1090,29 @@ f_apply_daily_operator_core(_i) =>
                         coreDef := "representative_family_core"
         if na(coreLow) or na(coreHigh) or coreHigh <= coreLow or (coreHigh - coreLow) >= macroWidth * 0.9
             halfWidth = macroWidth * 0.275
-            coreLow := math.max(low, mid - halfWidth)
-            coreHigh := math.min(high, mid + halfWidth)
+            coreLow := math.max(zoneLowValue, mid - halfWidth)
+            coreHigh := math.min(zoneHighValue, mid + halfWidth)
             coreDef := "midpoint_narrowed_core"
-        coreLow := math.max(low, math.min(coreLow, high))
-        coreHigh := math.max(coreLow, math.min(coreHigh, high))
+        coreLow := math.max(zoneLowValue, math.min(coreLow, zoneHighValue))
+        coreHigh := math.max(coreLow, math.min(coreHigh, zoneHighValue))
+        widthAtrValue = array.get(zoneWidthAtr, _i)
+        atrFloor = not na(widthAtrValue) and widthAtrValue > 0.0 ? (macroWidth / widthAtrValue) * DAILY_OPERATOR_CORE_MIN_WIDTH_ATR_MULT : 0.0
+        pctFloor = math.abs(mid) * DAILY_OPERATOR_CORE_MIN_WIDTH_PCT
+        minCoreWidth = math.min(macroWidth, math.max(pctFloor, atrFloor))
+        if minCoreWidth > 0.0 and coreHigh - coreLow < minCoreWidth
+            targetWidth = math.min(minCoreWidth, macroWidth)
+            coreMidForFloor = (coreLow + coreHigh) * 0.5
+            expandedLow = coreMidForFloor - targetWidth * 0.5
+            expandedHigh = coreMidForFloor + targetWidth * 0.5
+            if expandedLow < zoneLowValue
+                expandedHigh := math.min(zoneHighValue, expandedHigh + (zoneLowValue - expandedLow))
+                expandedLow := zoneLowValue
+            if expandedHigh > zoneHighValue
+                expandedLow := math.max(zoneLowValue, expandedLow - (expandedHigh - zoneHighValue))
+                expandedHigh := zoneHighValue
+            coreLow := expandedLow
+            coreHigh := expandedHigh
+            coreDef := coreDef + "_width_floored"
         array.set(zoneCoreLow, _i, math.round(coreLow * 100000000.0) / 100000000.0)
         array.set(zoneCoreHigh, _i, math.round(coreHigh * 100000000.0) / 100000000.0)
         array.set(zoneCoreMid, _i, math.round(((coreLow + coreHigh) * 0.5) * 100000000.0) / 100000000.0)
@@ -1309,7 +1329,8 @@ f_select_daily_majors(_referencePrice) =>
             if array.get(zoneStatus, i) == "confirmed"
                 f_apply_daily_soft_retest_weights(i)
                 strength = na(array.get(zoneStrengthScore, i)) ? 0.0 : array.get(zoneStrengthScore, i)
-                if strength >= DAILY_MIN_STRENGTH
+                meaningfulTouches = array.get(zoneMeaningfulTouchCount, i)
+                if meaningfulTouches >= DAILY_MIN_MEANINGFUL_TOUCHES and strength >= DAILY_MIN_STRENGTH
                     array.push(prefilter, i)
                     f_apply_daily_operator_core(i)
     band = f_select_daily_local_band_representatives(prefilter)

@@ -1,6 +1,6 @@
 {
   "canonical_source": {
-    "liquidsniper_root": "/Users/wit/.openclaw/workspace/LiquidSniper",
+    "liquidsniper_root": "/Users/wit/.openclaw/worktrees/LiquidSniper-sr-selector-touch-floor-20260505",
     "selector": "liquidsniper/core/zone_selectors.py:select_daily_majors",
     "sequence": "structure + base + reaction -> merge_candidate_zones -> score_zone -> select_daily_majors -> operator core",
     "zone_engine": "liquidsniper/core/zone_engine_v3.py"
@@ -18,7 +18,7 @@
   },
   "contract": "pine_surveyor_sr_daily_major_golden_v1",
   "data_source_caveat": "Golden zones are generated from MarketArbiter's local imported Binance Public Data USD-M futures candles. TradingView candle history/session/vendor rounding can differ; Pine parity checks should separate code-port bugs from data-source mismatch.",
-  "generated_at": "2026-05-04T15:54:20.393466Z",
+  "generated_at": "2026-05-06T02:23:52.553470Z",
   "provider_id": "binance_public_data",
   "requested_asof_dates": [
     "2023-01-01",
@@ -34,7 +34,7 @@
         "merged_candidates": 35,
         "reaction_candidates": 73,
         "scored_candidates": 35,
-        "selected_daily_majors": 6,
+        "selected_daily_majors": 7,
         "structure_candidates": 13
       },
       "candle_count": 672,
@@ -111,10 +111,13 @@
           },
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
-            "demoted_ids": [],
+            "demoted_ids": [
+              "BTCUSDT:1D:21:28698.083"
+            ],
             "id": "1D:selected-pocket:2",
-            "member_count": 1,
+            "member_count": 2,
             "member_ids": [
+              "BTCUSDT:1D:21:28698.083",
               "BTCUSDT:1D:25:31462.0"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
@@ -163,10 +166,10 @@
           },
           "lifecycle_state": "virgin",
           "operator_core_bounds": {
-            "definition": "midpoint_narrowed_core",
+            "definition": "midpoint_narrowed_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 31481.62370536,
-            "low": 31442.37629464,
+            "high": 31493.462,
+            "low": 31430.538,
             "mid": 31462.0
           },
           "origin_kind": "resistance",
@@ -329,10 +332,10 @@
           },
           "lifecycle_state": "virgin",
           "operator_core_bounds": {
-            "definition": "midpoint_narrowed_core",
+            "definition": "midpoint_narrowed_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 41432.62370536,
-            "low": 41393.37629464,
+            "high": 41448.67946429,
+            "low": 41377.32053571,
             "mid": 41413.0
           },
           "origin_kind": "resistance",
@@ -495,10 +498,10 @@
           },
           "lifecycle_state": "virgin",
           "operator_core_bounds": {
-            "definition": "midpoint_narrowed_core",
+            "definition": "midpoint_narrowed_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 36642.62370536,
-            "low": 36603.37629464,
+            "high": 36658.67946429,
+            "low": 36587.32053571,
             "mid": 36623.0
           },
           "origin_kind": "resistance",
@@ -567,178 +570,118 @@
           "arbitration_diagnostics": {
             "candidates": [
               {
-                "base_score": 100.0,
-                "carry_score": 57.8739,
-                "family": "structure",
-                "high": 25200.0,
+                "base_score": 87.6007,
+                "carry_score": 90.6459,
+                "family": "reaction",
+                "high": 56451.69946429,
                 "kept": true,
                 "kept_reason": "top_ranked_in_cluster",
-                "low": 24085.2,
-                "mid": 24642.6,
-                "reaction_efficiency_score": 67.5664,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:532:618:resistance"
-              },
-              {
-                "base_score": 86.7245,
-                "carry_score": 94.5362,
-                "family": "reaction",
-                "high": 25235.67946429,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 25164.32053571,
-                "mid": 25200.0,
-                "reaction_efficiency_score": 100.0,
-                "source_family": "reaction_family",
-                "status": "candidate",
-                "strength_score": 86.7245,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:18:25200.0"
-              },
-              {
-                "base_score": 85.2456,
-                "carry_score": 91.9517,
-                "family": "reaction",
-                "high": 24312.67946429,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 24241.32053571,
-                "mid": 24277.0,
+                "low": 56380.34053571,
+                "mid": 56416.02,
                 "reaction_efficiency_score": 100.0,
                 "source_family": "reaction_family",
                 "status": "confirmed",
-                "strength_score": 85.2456,
+                "strength_score": 87.6007,
                 "tf": "1D",
-                "zone_id": "BTCUSDT:1D:16:24277.0"
-              },
-              {
-                "base_score": 82.1505,
-                "carry_score": 92.6272,
-                "family": "reaction",
-                "high": 24735.67946429,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 24664.32053571,
-                "mid": 24700.0,
-                "reaction_efficiency_score": 100.0,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 82.1505,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:17:24700.0"
+                "zone_id": "BTCUSDT:1D:61:56416.02"
               }
             ],
-            "cluster_size": 4,
+            "cluster_size": 1,
             "engine_contract": "zone_engine_v3d",
             "families": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "family_confluence_bonus": 4.0,
-            "kept_source_family": "structure_anchor_v3a",
-            "kept_zone_id": "BTCUSDT:1D:structure:flip_anchor:532:618:resistance",
+            "family_confluence_bonus": 0.0,
+            "kept_source_family": "reaction_family",
+            "kept_zone_id": "BTCUSDT:1D:61:56416.02",
             "score_components": {
-              "family_confluence_bonus": 4.0,
-              "final_selection_score": 104.0,
-              "winner_base_score": 100.0
+              "family_confluence_bonus": 0.0,
+              "final_selection_score": 87.6007,
+              "winner_base_score": 87.6007
             }
           },
           "current_role": "resistance",
           "daily_major_diagnostics": {
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "has_structure": true,
-            "merge_family_count": 2,
+            "has_structure": false,
+            "merge_family_count": 1,
             "pure_base_only": false,
-            "weight": 1.08
+            "weight": 1.0
           },
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
-            "demoted_ids": [
-              "BTCUSDT:1D:structure:bos_anchor:472:474:resistance"
-            ],
-            "id": "1D:selected-pocket:1",
-            "member_count": 2,
+            "demoted_ids": [],
+            "id": "1D:selected-pocket:6",
+            "member_count": 1,
             "member_ids": [
-              "BTCUSDT:1D:structure:bos_anchor:472:474:resistance",
-              "BTCUSDT:1D:structure:flip_anchor:532:618:resistance"
+              "BTCUSDT:1D:61:56416.02"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
           },
           "families": {
             "candidate_families": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "candidate_family": "structure",
+            "candidate_family": "reaction",
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
             "generator_contracts": {
-              "reaction": "zone_engine_v3b",
-              "structure": "zone_engine_v3a"
+              "reaction": "zone_engine_v3b"
             },
-            "merge_family_count": 2,
+            "merge_family_count": 1,
             "provenance_summary": {
               "candidate_families": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
               "generator_contracts": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
-              "has_structure": true,
-              "merge_family_count": 2,
-              "primary_family": "structure",
+              "has_structure": false,
+              "merge_family_count": 1,
+              "primary_family": "reaction",
               "source_versions": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
               "zone_kind": "resistance"
             },
-            "source_family": "structure_anchor_v3a",
-            "source_family_display": "structure_anchor_v3a",
-            "source_family_primary": "structure",
+            "source_family": "reaction_family",
+            "source_family_display": "reaction_family",
+            "source_family_primary": "reaction",
             "source_versions": {
-              "reaction": "sr_engine_v2_reaction_family",
-              "structure": "zone_engine_v3_structure_seed_rules_v1"
+              "reaction": "sr_engine_v2_reaction_family"
             }
           },
           "full_zone_bounds": {
-            "high": 25235.67946429,
-            "low": 24085.2,
-            "mid": 24704.9,
-            "width": 1150.4794642899978,
-            "width_atr": 4.030608,
-            "width_bps": 452.3873
+            "high": 56451.69946429,
+            "low": 56380.34053571,
+            "mid": 56416.02,
+            "width": 71.35892858000443,
+            "width_atr": 0.25,
+            "width_bps": 12.6487
           },
           "lifecycle_state": "virgin",
           "operator_core_bounds": {
-            "definition": "midpoint_narrowed_core",
+            "definition": "midpoint_narrowed_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 25021.28185268,
-            "low": 24388.51814732,
-            "mid": 24704.9
+            "high": 56451.69946429,
+            "low": 56380.34053571,
+            "mid": 56416.02
           },
           "origin_kind": "resistance",
           "relative_position": "below",
           "scores": {
-            "body_respect_score": 47.373,
-            "carry_score": 57.8739,
-            "daily_major_provenance_weight": 1.08,
-            "family_confluence_bonus": 3.0,
-            "reaction_efficiency_score": 67.5664,
-            "reaction_score": 82.0,
-            "retest_weight": 0.8679,
-            "selection_score": 119.3121,
-            "strength_score": 100.0
+            "body_respect_score": 4.0,
+            "carry_score": 90.6459,
+            "daily_major_provenance_weight": 1.0,
+            "family_confluence_bonus": 0.0,
+            "reaction_efficiency_score": 100.0,
+            "reaction_score": 100.0,
+            "retest_weight": 1.0,
+            "selection_score": 117.4395,
+            "strength_score": 87.6007
           },
           "selector_rank": 4,
           "selector_reason": "kept: daily macro anchor after pocket consolidation",
@@ -749,8 +692,8 @@
             "first_touch_state": "virgin",
             "interaction_buy": {
               "current_role": "resistance",
-              "distance_to_zone": 7474.9,
-              "distance_to_zone_atr": 26.187683,
+              "distance_to_zone": 39770.04053571,
+              "distance_to_zone_atr": 139.33099,
               "expected_relation": "above",
               "interaction_bias": "counter",
               "is_aligned": false,
@@ -758,18 +701,18 @@
               "origin_kind": "resistance",
               "penetration_atr": 0.0,
               "price_relation": "below",
-              "reference_price": 24704.9,
+              "reference_price": 56416.02,
               "relative_position": "below",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "buy",
               "zone_kind": "resistance",
-              "zone_width_atr": 4.030608
+              "zone_width_atr": 0.25
             },
             "interaction_role": "resistance",
             "interaction_sell": {
               "current_role": "resistance",
-              "distance_to_zone": 7474.9,
-              "distance_to_zone_atr": 26.187683,
+              "distance_to_zone": 39770.04053571,
+              "distance_to_zone_atr": 139.33099,
               "expected_relation": "below",
               "interaction_bias": "aligned",
               "is_aligned": true,
@@ -777,417 +720,298 @@
               "origin_kind": "resistance",
               "penetration_atr": 0.0,
               "price_relation": "below",
-              "reference_price": 24704.9,
+              "reference_price": 56416.02,
               "relative_position": "below",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "sell",
               "zone_kind": "resistance",
-              "zone_width_atr": 4.030608
+              "zone_width_atr": 0.25
             },
-            "meaningful_touch_count": 1
+            "meaningful_touch_count": 45
           },
-          "zone_id": "BTCUSDT:1D:structure:flip_anchor:532:618:resistance",
+          "zone_id": "BTCUSDT:1D:61:56416.02",
           "zone_kind": "resistance"
         },
         {
           "arbitration_diagnostics": {
             "candidates": [
               {
-                "base_score": 100.0,
-                "carry_score": 58.1826,
-                "family": "structure",
-                "high": 48200.0,
+                "base_score": 87.2068,
+                "carry_score": 73.8161,
+                "family": "reaction",
+                "high": 28743.206,
                 "kept": true,
                 "kept_reason": "top_ranked_in_cluster",
-                "low": 46820.9,
-                "mid": 47510.45,
-                "reaction_efficiency_score": 62.0106,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:392:434:resistance"
-              },
-              {
-                "base_score": 93.1134,
-                "carry_score": 89.4358,
-                "family": "reaction",
-                "high": 48260.0,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 48181.16,
-                "mid": 48220.58,
+                "low": 28652.96,
+                "mid": 28698.083,
                 "reaction_efficiency_score": 100.0,
                 "source_family": "reaction_family",
                 "status": "confirmed",
-                "strength_score": 93.1134,
+                "strength_score": 87.2068,
                 "tf": "1D",
-                "zone_id": "BTCUSDT:1D:53:48220.58"
-              },
-              {
-                "base_score": 90.0071,
-                "carry_score": 89.5588,
-                "family": "reaction",
-                "high": 48885.67946429,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 48814.32053571,
-                "mid": 48850.0,
-                "reaction_efficiency_score": 100.0,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 90.0071,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:54:48850.0"
+                "zone_id": "BTCUSDT:1D:21:28698.083"
               }
             ],
-            "cluster_size": 3,
+            "cluster_size": 1,
             "engine_contract": "zone_engine_v3d",
             "families": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "family_confluence_bonus": 4.0,
-            "kept_source_family": "structure_anchor_v3a",
-            "kept_zone_id": "BTCUSDT:1D:structure:flip_anchor:392:434:resistance",
+            "family_confluence_bonus": 0.0,
+            "kept_source_family": "reaction_family",
+            "kept_zone_id": "BTCUSDT:1D:21:28698.083",
             "score_components": {
-              "family_confluence_bonus": 4.0,
-              "final_selection_score": 104.0,
-              "winner_base_score": 100.0
+              "family_confluence_bonus": 0.0,
+              "final_selection_score": 87.2068,
+              "winner_base_score": 87.2068
             }
           },
           "current_role": "resistance",
           "daily_major_diagnostics": {
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "has_structure": true,
-            "merge_family_count": 2,
+            "has_structure": false,
+            "merge_family_count": 1,
             "pure_base_only": false,
-            "weight": 1.08
+            "weight": 1.0
           },
           "daily_pocket": {
-            "contract": "daily_macro_pocket_v1",
-            "demoted_ids": [
-              "BTCUSDT:1D:structure:flip_anchor:24:43:support"
-            ],
-            "id": "1D:selected-pocket:5",
-            "member_count": 2,
-            "member_ids": [
-              "BTCUSDT:1D:structure:flip_anchor:392:434:resistance",
-              "BTCUSDT:1D:structure:flip_anchor:24:43:support"
-            ],
-            "reason": "kept: daily macro anchor after pocket consolidation"
+            "contract": null,
+            "demoted_ids": null,
+            "id": null,
+            "member_count": null,
+            "member_ids": null,
+            "reason": null
           },
           "families": {
             "candidate_families": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "candidate_family": "structure",
+            "candidate_family": "reaction",
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
             "generator_contracts": {
-              "reaction": "zone_engine_v3b",
-              "structure": "zone_engine_v3a"
+              "reaction": "zone_engine_v3b"
             },
-            "merge_family_count": 2,
+            "merge_family_count": 1,
             "provenance_summary": {
               "candidate_families": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
               "generator_contracts": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
-              "has_structure": true,
-              "merge_family_count": 2,
-              "primary_family": "structure",
+              "has_structure": false,
+              "merge_family_count": 1,
+              "primary_family": "reaction",
               "source_versions": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
-              "zone_kind": "resistance"
+              "zone_kind": "support"
             },
-            "source_family": "structure_anchor_v3a",
-            "source_family_display": "structure_anchor_v3a",
-            "source_family_primary": "structure",
+            "source_family": "reaction_family",
+            "source_family_display": "reaction_family",
+            "source_family_primary": "reaction",
             "source_versions": {
-              "reaction": "sr_engine_v2_reaction_family",
-              "structure": "zone_engine_v3_structure_seed_rules_v1"
+              "reaction": "sr_engine_v2_reaction_family"
             }
           },
           "full_zone_bounds": {
-            "high": 48885.67946429,
-            "low": 46820.9,
-            "mid": 48193.67666667,
-            "width": 2064.779464289997,
-            "width_atr": 7.233781,
-            "width_bps": 290.273
+            "high": 28743.206,
+            "low": 28652.96,
+            "mid": 28698.083,
+            "width": 90.24599999999919,
+            "width_atr": 0.316169,
+            "width_bps": 31.4467
           },
-          "lifecycle_state": "virgin",
+          "lifecycle_state": "counter_side",
           "operator_core_bounds": {
-            "definition": "representative_family_core",
+            "definition": "midpoint_narrowed_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 48200.0,
-            "low": 46820.9,
-            "mid": 47510.45
+            "high": 28726.781083,
+            "low": 28669.384917,
+            "mid": 28698.083
           },
-          "origin_kind": "resistance",
+          "origin_kind": "support",
           "relative_position": "below",
           "scores": {
-            "body_respect_score": 47.9286,
-            "carry_score": 58.1826,
-            "daily_major_provenance_weight": 1.08,
-            "family_confluence_bonus": 3.0,
-            "reaction_efficiency_score": 62.0106,
-            "reaction_score": 82.0,
-            "retest_weight": 0.8683,
-            "selection_score": 118.5379,
-            "strength_score": 100.0
+            "body_respect_score": 18.0,
+            "carry_score": 73.8161,
+            "daily_major_provenance_weight": 1.0,
+            "family_confluence_bonus": 0.0,
+            "reaction_efficiency_score": 100.0,
+            "reaction_score": 100.0,
+            "retest_weight": 0.9387,
+            "selection_score": 112.0922,
+            "strength_score": 87.2068
           },
           "selector_rank": 5,
-          "selector_reason": "kept: daily macro anchor after pocket consolidation",
+          "selector_reason": "kept: daily current-regime coverage anchor",
           "selector_status": "kept",
           "selector_surface": "daily_major",
           "status": "confirmed",
           "touch_reaction_fields": {
-            "first_touch_state": "virgin",
+            "first_touch_state": "counter_side",
             "interaction_buy": {
               "current_role": "resistance",
-              "distance_to_zone": 30210.6,
-              "distance_to_zone_atr": 105.840294,
+              "distance_to_zone": 12042.66,
+              "distance_to_zone_atr": 42.190446,
               "expected_relation": "above",
               "interaction_bias": "counter",
               "is_aligned": false,
-              "lifecycle_state": "counter_side",
-              "origin_kind": "resistance",
+              "lifecycle_state": "broken",
+              "origin_kind": "support",
               "penetration_atr": 0.0,
               "price_relation": "below",
-              "reference_price": 48193.67666667,
+              "reference_price": 28698.083,
               "relative_position": "below",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "buy",
-              "zone_kind": "resistance",
-              "zone_width_atr": 7.233781
+              "zone_kind": "support",
+              "zone_width_atr": 0.316169
             },
             "interaction_role": "resistance",
             "interaction_sell": {
               "current_role": "resistance",
-              "distance_to_zone": 30210.6,
-              "distance_to_zone_atr": 105.840294,
+              "distance_to_zone": 12042.66,
+              "distance_to_zone_atr": 42.190446,
               "expected_relation": "below",
               "interaction_bias": "aligned",
               "is_aligned": true,
-              "lifecycle_state": "virgin",
-              "origin_kind": "resistance",
+              "lifecycle_state": "counter_side",
+              "origin_kind": "support",
               "penetration_atr": 0.0,
               "price_relation": "below",
-              "reference_price": 48193.67666667,
+              "reference_price": 28698.083,
               "relative_position": "below",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "sell",
-              "zone_kind": "resistance",
-              "zone_width_atr": 7.233781
+              "zone_kind": "support",
+              "zone_width_atr": 0.316169
             },
-            "meaningful_touch_count": 1
+            "meaningful_touch_count": 13
           },
-          "zone_id": "BTCUSDT:1D:structure:flip_anchor:392:434:resistance",
-          "zone_kind": "resistance"
+          "zone_id": "BTCUSDT:1D:21:28698.083",
+          "zone_kind": "support"
         },
         {
           "arbitration_diagnostics": {
             "candidates": [
               {
-                "base_score": 100.0,
-                "carry_score": 59.1822,
-                "family": "structure",
-                "high": 64986.11,
+                "base_score": 84.1006,
+                "carry_score": 86.2737,
+                "family": "reaction",
+                "high": 46458.594,
                 "kept": true,
                 "kept_reason": "top_ranked_in_cluster",
-                "low": 63019.1,
-                "mid": 64002.605,
-                "reaction_efficiency_score": 49.6525,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance"
-              },
-              {
-                "base_score": 100.0,
-                "carry_score": 60.886,
-                "family": "structure",
-                "high": 69198.7,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 64920.13,
-                "mid": 67059.415,
-                "reaction_efficiency_score": 1.0623,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:254:278:resistance"
-              },
-              {
-                "base_score": 85.7888,
-                "carry_score": 90.8515,
-                "family": "reaction",
-                "high": 64385.22946429,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 64313.87053571,
-                "mid": 64349.55,
+                "low": 46296.0,
+                "mid": 46377.297,
                 "reaction_efficiency_score": 100.0,
                 "source_family": "reaction_family",
                 "status": "confirmed",
-                "strength_score": 85.7888,
+                "strength_score": 84.1006,
                 "tf": "1D",
-                "zone_id": "BTCUSDT:1D:69:64349.55"
-              },
-              {
-                "base_score": 83.8312,
-                "carry_score": 94.4748,
-                "family": "reaction",
-                "high": 65021.78946429,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 64950.43053571,
-                "mid": 64986.11,
-                "reaction_efficiency_score": 100.0,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 83.8312,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:70:64986.11"
-              },
-              {
-                "base_score": 73.9144,
-                "carry_score": 83.1227,
-                "family": "reaction",
-                "high": 64033.28946429,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 63961.93053571,
-                "mid": 63997.61,
-                "reaction_efficiency_score": 100.0,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 73.9144,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:68:63997.61"
+                "zone_id": "BTCUSDT:1D:51:46377.297"
               }
             ],
-            "cluster_size": 5,
+            "cluster_size": 1,
             "engine_contract": "zone_engine_v3d",
             "families": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "family_confluence_bonus": 4.0,
-            "kept_source_family": "structure_anchor_v3a",
-            "kept_zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance",
+            "family_confluence_bonus": 0.0,
+            "kept_source_family": "reaction_family",
+            "kept_zone_id": "BTCUSDT:1D:51:46377.297",
             "score_components": {
-              "family_confluence_bonus": 4.0,
-              "final_selection_score": 104.0,
-              "winner_base_score": 100.0
+              "family_confluence_bonus": 0.0,
+              "final_selection_score": 84.1006,
+              "winner_base_score": 84.1006
             }
           },
           "current_role": "resistance",
           "daily_major_diagnostics": {
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "has_structure": true,
-            "merge_family_count": 2,
+            "has_structure": false,
+            "merge_family_count": 1,
             "pure_base_only": false,
-            "weight": 1.08
+            "weight": 1.0
           },
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
             "demoted_ids": [],
-            "id": "1D:selected-pocket:6",
+            "id": "1D:selected-pocket:5",
             "member_count": 1,
             "member_ids": [
-              "BTCUSDT:1D:structure:flip_anchor:44:55:resistance"
+              "BTCUSDT:1D:51:46377.297"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
           },
           "families": {
             "candidate_families": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "candidate_family": "structure",
+            "candidate_family": "reaction",
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
             "generator_contracts": {
-              "reaction": "zone_engine_v3b",
-              "structure": "zone_engine_v3a"
+              "reaction": "zone_engine_v3b"
             },
-            "merge_family_count": 2,
+            "merge_family_count": 1,
             "provenance_summary": {
               "candidate_families": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
               "generator_contracts": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
-              "has_structure": true,
-              "merge_family_count": 2,
-              "primary_family": "structure",
+              "has_structure": false,
+              "merge_family_count": 1,
+              "primary_family": "reaction",
               "source_versions": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
-              "zone_kind": "resistance"
+              "zone_kind": "support"
             },
-            "source_family": "structure_anchor_v3a",
-            "source_family_display": "structure_anchor_v3a",
-            "source_family_primary": "structure",
+            "source_family": "reaction_family",
+            "source_family_display": "reaction_family",
+            "source_family_primary": "reaction",
             "source_versions": {
-              "reaction": "sr_engine_v2_reaction_family",
-              "structure": "zone_engine_v3_structure_seed_rules_v1"
+              "reaction": "sr_engine_v2_reaction_family"
             }
           },
           "full_zone_bounds": {
-            "high": 69198.7,
-            "low": 63019.1,
-            "mid": 64879.058,
-            "width": 6179.5999999999985,
-            "width_atr": 21.649708,
-            "width_bps": 307.3328
+            "high": 46458.594,
+            "low": 46296.0,
+            "mid": 46377.297,
+            "width": 162.59399999999732,
+            "width_atr": 0.569634,
+            "width_bps": 35.059
           },
-          "lifecycle_state": "virgin",
+          "lifecycle_state": "counter_side",
           "operator_core_bounds": {
-            "definition": "representative_family_core",
+            "definition": "midpoint_narrowed_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 64986.11,
-            "low": 63019.1,
-            "mid": 64002.605
+            "high": 46423.674297,
+            "low": 46330.919703,
+            "mid": 46377.297
           },
-          "origin_kind": "resistance",
+          "origin_kind": "support",
           "relative_position": "below",
           "scores": {
-            "body_respect_score": 49.728,
-            "carry_score": 59.1822,
-            "daily_major_provenance_weight": 1.08,
-            "family_confluence_bonus": 3.0,
-            "reaction_efficiency_score": 49.6525,
-            "reaction_score": 82.0,
-            "retest_weight": 0.8695,
-            "selection_score": 116.9322,
-            "strength_score": 100.0
+            "body_respect_score": 19.2766,
+            "carry_score": 86.2737,
+            "daily_major_provenance_weight": 1.0,
+            "family_confluence_bonus": 0.0,
+            "reaction_efficiency_score": 100.0,
+            "reaction_score": 100.0,
+            "retest_weight": 0.8221,
+            "selection_score": 100.2453,
+            "strength_score": 84.1006
           },
           "selector_rank": 6,
           "selector_reason": "kept: daily macro anchor after pocket consolidation",
@@ -1195,48 +1019,214 @@
           "selector_surface": "daily_major",
           "status": "confirmed",
           "touch_reaction_fields": {
-            "first_touch_state": "virgin",
+            "first_touch_state": "counter_side",
             "interaction_buy": {
               "current_role": "resistance",
-              "distance_to_zone": 46408.8,
-              "distance_to_zone_atr": 162.589325,
+              "distance_to_zone": 29685.7,
+              "distance_to_zone_atr": 104.001351,
               "expected_relation": "above",
               "interaction_bias": "counter",
               "is_aligned": false,
-              "lifecycle_state": "counter_side",
-              "origin_kind": "resistance",
+              "lifecycle_state": "broken",
+              "origin_kind": "support",
               "penetration_atr": 0.0,
               "price_relation": "below",
-              "reference_price": 64879.058,
+              "reference_price": 46377.297,
               "relative_position": "below",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "buy",
-              "zone_kind": "resistance",
-              "zone_width_atr": 21.649708
+              "zone_kind": "support",
+              "zone_width_atr": 0.569634
             },
             "interaction_role": "resistance",
             "interaction_sell": {
               "current_role": "resistance",
-              "distance_to_zone": 46408.8,
-              "distance_to_zone_atr": 162.589325,
+              "distance_to_zone": 29685.7,
+              "distance_to_zone_atr": 104.001351,
               "expected_relation": "below",
               "interaction_bias": "aligned",
               "is_aligned": true,
-              "lifecycle_state": "virgin",
-              "origin_kind": "resistance",
+              "lifecycle_state": "counter_side",
+              "origin_kind": "support",
               "penetration_atr": 0.0,
               "price_relation": "below",
-              "reference_price": 64879.058,
+              "reference_price": 46377.297,
               "relative_position": "below",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "sell",
-              "zone_kind": "resistance",
-              "zone_width_atr": 21.649708
+              "zone_kind": "support",
+              "zone_width_atr": 0.569634
             },
-            "meaningful_touch_count": 1
+            "meaningful_touch_count": 47
           },
-          "zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance",
-          "zone_kind": "resistance"
+          "zone_id": "BTCUSDT:1D:51:46377.297",
+          "zone_kind": "support"
+        },
+        {
+          "arbitration_diagnostics": {
+            "candidates": [
+              {
+                "base_score": 79.9638,
+                "carry_score": 83.7421,
+                "family": "reaction",
+                "high": 15948.38,
+                "kept": true,
+                "kept_reason": "top_ranked_in_cluster",
+                "low": 15841.22,
+                "mid": 15894.8,
+                "reaction_efficiency_score": 100.0,
+                "source_family": "reaction_family",
+                "status": "confirmed",
+                "strength_score": 79.9638,
+                "tf": "1D",
+                "zone_id": "BTCUSDT:1D:2:15894.8"
+              }
+            ],
+            "cluster_size": 1,
+            "engine_contract": "zone_engine_v3d",
+            "families": [
+              "reaction"
+            ],
+            "family_confluence_bonus": 0.0,
+            "kept_source_family": "reaction_family",
+            "kept_zone_id": "BTCUSDT:1D:2:15894.8",
+            "score_components": {
+              "family_confluence_bonus": 0.0,
+              "final_selection_score": 79.9638,
+              "winner_base_score": 79.9638
+            }
+          },
+          "current_role": "support",
+          "daily_major_diagnostics": {
+            "candidate_sources": [
+              "reaction"
+            ],
+            "has_structure": false,
+            "merge_family_count": 1,
+            "pure_base_only": false,
+            "weight": 1.0
+          },
+          "daily_pocket": {
+            "contract": "daily_macro_pocket_v1",
+            "demoted_ids": [],
+            "id": "1D:selected-pocket:1",
+            "member_count": 1,
+            "member_ids": [
+              "BTCUSDT:1D:2:15894.8"
+            ],
+            "reason": "kept: daily macro anchor after pocket consolidation"
+          },
+          "families": {
+            "candidate_families": [
+              "reaction"
+            ],
+            "candidate_family": "reaction",
+            "candidate_sources": [
+              "reaction"
+            ],
+            "generator_contracts": {
+              "reaction": "zone_engine_v3b"
+            },
+            "merge_family_count": 1,
+            "provenance_summary": {
+              "candidate_families": [
+                "reaction"
+              ],
+              "generator_contracts": [
+                "reaction"
+              ],
+              "has_structure": false,
+              "merge_family_count": 1,
+              "primary_family": "reaction",
+              "source_versions": [
+                "reaction"
+              ],
+              "zone_kind": "support"
+            },
+            "source_family": "reaction_family",
+            "source_family_display": "reaction_family",
+            "source_family_primary": "reaction",
+            "source_versions": {
+              "reaction": "sr_engine_v2_reaction_family"
+            }
+          },
+          "full_zone_bounds": {
+            "high": 15948.38,
+            "low": 15841.22,
+            "mid": 15894.8,
+            "width": 107.15999999999985,
+            "width_atr": 0.375426,
+            "width_bps": 67.4183
+          },
+          "lifecycle_state": "virgin",
+          "operator_core_bounds": {
+            "definition": "midpoint_narrowed_core",
+            "display_bounds_kind": "core",
+            "high": 15924.269,
+            "low": 15865.331,
+            "mid": 15894.8
+          },
+          "origin_kind": "support",
+          "relative_position": "above",
+          "scores": {
+            "body_respect_score": 30.0,
+            "carry_score": 83.7421,
+            "daily_major_provenance_weight": 1.0,
+            "family_confluence_bonus": 0.0,
+            "reaction_efficiency_score": 100.0,
+            "reaction_score": 100.0,
+            "retest_weight": 0.8439,
+            "selection_score": 99.5037,
+            "strength_score": 79.9638
+          },
+          "selector_rank": 7,
+          "selector_reason": "kept: daily macro anchor after pocket consolidation",
+          "selector_status": "kept",
+          "selector_surface": "daily_major",
+          "status": "confirmed",
+          "touch_reaction_fields": {
+            "first_touch_state": "virgin",
+            "interaction_buy": {
+              "current_role": "support",
+              "distance_to_zone": 661.92,
+              "distance_to_zone_atr": 2.318981,
+              "expected_relation": "above",
+              "interaction_bias": "aligned",
+              "is_aligned": true,
+              "lifecycle_state": "virgin",
+              "origin_kind": "support",
+              "penetration_atr": 0.0,
+              "price_relation": "above",
+              "reference_price": 15894.8,
+              "relative_position": "above",
+              "role_semantics_contract": "zone_role_semantics_v1",
+              "side": "buy",
+              "zone_kind": "support",
+              "zone_width_atr": 0.375426
+            },
+            "interaction_role": "support",
+            "interaction_sell": {
+              "current_role": "support",
+              "distance_to_zone": 661.92,
+              "distance_to_zone_atr": 2.318981,
+              "expected_relation": "below",
+              "interaction_bias": "counter",
+              "is_aligned": false,
+              "lifecycle_state": "counter_side",
+              "origin_kind": "support",
+              "penetration_atr": 0.0,
+              "price_relation": "above",
+              "reference_price": 15894.8,
+              "relative_position": "above",
+              "role_semantics_contract": "zone_role_semantics_v1",
+              "side": "sell",
+              "zone_kind": "support",
+              "zone_width_atr": 0.375426
+            },
+            "meaningful_touch_count": 5
+          },
+          "zone_id": "BTCUSDT:1D:2:15894.8",
+          "zone_kind": "support"
         }
       ]
     },
@@ -1247,7 +1237,7 @@
         "merged_candidates": 23,
         "reaction_candidates": 19,
         "scored_candidates": 23,
-        "selected_daily_majors": 5,
+        "selected_daily_majors": 3,
         "structure_candidates": 20
       },
       "candle_count": 1037,
@@ -1393,13 +1383,13 @@
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
             "demoted_ids": [
-              "BTCUSDT:1D:structure:flip_anchor:474:505:support"
+              "BTCUSDT:1D:base:705:resistance"
             ],
             "id": "1D:selected-pocket:1",
             "member_count": 2,
             "member_ids": [
-              "BTCUSDT:1D:structure:flip_anchor:474:505:support",
-              "BTCUSDT:1D:base:611:resistance"
+              "BTCUSDT:1D:base:611:resistance",
+              "BTCUSDT:1D:base:705:resistance"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
           },
@@ -1593,10 +1583,13 @@
           },
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
-            "demoted_ids": [],
+            "demoted_ids": [
+              "BTCUSDT:1D:base:906:support"
+            ],
             "id": "1D:selected-pocket:2",
-            "member_count": 1,
+            "member_count": 2,
             "member_ids": [
+              "BTCUSDT:1D:base:906:support",
               "BTCUSDT:1D:base:893:resistance"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
@@ -1724,150 +1717,121 @@
           "arbitration_diagnostics": {
             "candidates": [
               {
-                "base_score": 100.0,
-                "carry_score": 59.2295,
-                "family": "structure",
-                "high": 44396.68,
+                "base_score": 85.3653,
+                "carry_score": 71.7857,
+                "family": "reaction",
+                "high": 60100.0,
                 "kept": true,
                 "kept_reason": "top_ranked_in_cluster",
-                "low": 42534.32,
-                "mid": 43465.5,
-                "reaction_efficiency_score": 83.2884,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:bos_anchor:318:326:resistance"
-              },
-              {
-                "base_score": 67.2409,
-                "carry_score": 64.6506,
-                "family": "reaction",
-                "high": 45363.866,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 43392.358,
-                "mid": 44378.112,
-                "reaction_efficiency_score": 60.0173,
+                "low": 59224.99,
+                "mid": 59662.495,
+                "reaction_efficiency_score": 99.3855,
                 "source_family": "reaction_family",
                 "status": "confirmed",
-                "strength_score": 67.2409,
+                "strength_score": 85.3653,
                 "tf": "1D",
-                "zone_id": "BTCUSDT:1D:10:44378.112"
+                "zone_id": "BTCUSDT:1D:15:59662.495"
               }
             ],
-            "cluster_size": 2,
+            "cluster_size": 1,
             "engine_contract": "zone_engine_v3d",
             "families": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "family_confluence_bonus": 4.0,
-            "kept_source_family": "structure_anchor_v3a",
-            "kept_zone_id": "BTCUSDT:1D:structure:bos_anchor:318:326:resistance",
+            "family_confluence_bonus": 0.0,
+            "kept_source_family": "reaction_family",
+            "kept_zone_id": "BTCUSDT:1D:15:59662.495",
             "score_components": {
-              "family_confluence_bonus": 4.0,
-              "final_selection_score": 104.0,
-              "winner_base_score": 100.0
+              "family_confluence_bonus": 0.0,
+              "final_selection_score": 85.3653,
+              "winner_base_score": 85.3653
             }
           },
-          "current_role": "containing",
+          "current_role": "resistance",
           "daily_major_diagnostics": {
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "has_structure": true,
-            "merge_family_count": 2,
+            "has_structure": false,
+            "merge_family_count": 1,
             "pure_base_only": false,
-            "weight": 1.08
+            "weight": 1.0
           },
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
             "demoted_ids": [
-              "BTCUSDT:1D:structure:bos_anchor:204:219:support",
-              "BTCUSDT:1D:structure:flip_anchor:392:434:resistance",
-              "BTCUSDT:1D:structure:flip_anchor:24:43:support"
+              "BTCUSDT:1D:18:66772.525"
             ],
             "id": "1D:selected-pocket:3",
-            "member_count": 4,
+            "member_count": 2,
             "member_ids": [
-              "BTCUSDT:1D:structure:bos_anchor:204:219:support",
-              "BTCUSDT:1D:structure:bos_anchor:318:326:resistance",
-              "BTCUSDT:1D:structure:flip_anchor:392:434:resistance",
-              "BTCUSDT:1D:structure:flip_anchor:24:43:support"
+              "BTCUSDT:1D:15:59662.495",
+              "BTCUSDT:1D:18:66772.525"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
           },
           "families": {
             "candidate_families": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
-            "candidate_family": "structure",
+            "candidate_family": "reaction",
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "reaction"
             ],
             "generator_contracts": {
-              "reaction": "zone_engine_v3b",
-              "structure": "zone_engine_v3a"
+              "reaction": "zone_engine_v3b"
             },
-            "merge_family_count": 2,
+            "merge_family_count": 1,
             "provenance_summary": {
               "candidate_families": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
               "generator_contracts": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
-              "has_structure": true,
-              "merge_family_count": 2,
-              "primary_family": "structure",
+              "has_structure": false,
+              "merge_family_count": 1,
+              "primary_family": "reaction",
               "source_versions": [
-                "reaction",
-                "structure"
+                "reaction"
               ],
-              "zone_kind": "resistance"
+              "zone_kind": "mixed"
             },
-            "source_family": "structure_anchor_v3a",
-            "source_family_display": "structure_anchor_v3a",
-            "source_family_primary": "structure",
+            "source_family": "reaction_family",
+            "source_family_display": "reaction_family",
+            "source_family_primary": "reaction",
             "source_versions": {
-              "reaction": "sr_engine_v2_reaction_family",
-              "structure": "zone_engine_v3_structure_seed_rules_v1"
+              "reaction": "sr_engine_v2_reaction_family"
             }
           },
           "full_zone_bounds": {
-            "high": 45363.866,
-            "low": 42534.32,
-            "mid": 43921.806,
-            "width": 2829.546000000002,
-            "width_atr": 1.952758,
-            "width_bps": 428.4686
+            "high": 60100.0,
+            "low": 59224.99,
+            "mid": 59662.495,
+            "width": 875.010000000002,
+            "width_atr": 0.603872,
+            "width_bps": 146.66
           },
-          "lifecycle_state": "counter_side",
+          "lifecycle_state": "virgin",
           "operator_core_bounds": {
-            "definition": "overlap_density_core",
+            "definition": "midpoint_narrowed_core",
             "display_bounds_kind": "core",
-            "high": 44396.68,
-            "low": 43392.358,
-            "mid": 43894.519
+            "high": 59903.12275,
+            "low": 59421.86725,
+            "mid": 59662.495
           },
-          "origin_kind": "resistance",
-          "relative_position": "inside",
+          "origin_kind": "mixed",
+          "relative_position": "below",
           "scores": {
-            "body_respect_score": 57.0132,
-            "carry_score": 59.2295,
-            "daily_major_provenance_weight": 1.08,
-            "family_confluence_bonus": 3.0,
-            "reaction_efficiency_score": 83.2884,
-            "reaction_score": 82.0,
-            "retest_weight": 0.8724,
-            "selection_score": 123.3626,
-            "strength_score": 100.0
+            "body_respect_score": 21.4884,
+            "carry_score": 71.7857,
+            "daily_major_provenance_weight": 1.0,
+            "family_confluence_bonus": 0.0,
+            "reaction_efficiency_score": 99.3855,
+            "reaction_score": 100.0,
+            "retest_weight": 0.8222,
+            "selection_score": 100.542,
+            "strength_score": 85.3653
           },
           "selector_rank": 3,
           "selector_reason": "kept: daily macro anchor after pocket consolidation",
@@ -1875,460 +1839,48 @@
           "selector_surface": "daily_major",
           "status": "confirmed",
           "touch_reaction_fields": {
-            "first_touch_state": "counter_side",
-            "interaction_buy": {
-              "current_role": "containing",
-              "distance_to_zone": 0.0,
-              "distance_to_zone_atr": 0.0,
-              "expected_relation": "above",
-              "interaction_bias": "aligned",
-              "is_aligned": true,
-              "lifecycle_state": "counter_side",
-              "origin_kind": "resistance",
-              "penetration_atr": 0.782378,
-              "price_relation": "inside",
-              "reference_price": 43921.806,
-              "relative_position": "inside",
-              "role_semantics_contract": "zone_role_semantics_v1",
-              "side": "buy",
-              "zone_kind": "resistance",
-              "zone_width_atr": 1.952758
-            },
-            "interaction_role": "containing",
-            "interaction_sell": {
-              "current_role": "containing",
-              "distance_to_zone": 0.0,
-              "distance_to_zone_atr": 0.0,
-              "expected_relation": "below",
-              "interaction_bias": "aligned",
-              "is_aligned": true,
-              "lifecycle_state": "deep_test",
-              "origin_kind": "resistance",
-              "penetration_atr": 1.17038,
-              "price_relation": "inside",
-              "reference_price": 43921.806,
-              "relative_position": "inside",
-              "role_semantics_contract": "zone_role_semantics_v1",
-              "side": "sell",
-              "zone_kind": "resistance",
-              "zone_width_atr": 1.952758
-            },
-            "meaningful_touch_count": 1
-          },
-          "zone_id": "BTCUSDT:1D:structure:bos_anchor:318:326:resistance",
-          "zone_kind": "resistance"
-        },
-        {
-          "arbitration_diagnostics": {
-            "candidates": [
-              {
-                "base_score": 100.0,
-                "carry_score": 59.1822,
-                "family": "structure",
-                "high": 64986.11,
-                "kept": true,
-                "kept_reason": "top_ranked_in_cluster",
-                "low": 63019.1,
-                "mid": 64002.605,
-                "reaction_efficiency_score": 82.855,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance"
-              },
-              {
-                "base_score": 100.0,
-                "carry_score": 60.886,
-                "family": "structure",
-                "high": 69198.7,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 64920.13,
-                "mid": 67059.415,
-                "reaction_efficiency_score": 73.2834,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:254:278:resistance"
-              },
-              {
-                "base_score": 91.4221,
-                "carry_score": 77.0023,
-                "family": "reaction",
-                "high": 64731.486,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 64138.386,
-                "mid": 64434.936,
-                "reaction_efficiency_score": 100.0,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 91.4221,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:17:64434.936"
-              },
-              {
-                "base_score": 75.264,
-                "carry_score": 80.7556,
-                "family": "reaction",
-                "high": 62312.625,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 61950.375,
-                "mid": 62131.5,
-                "reaction_efficiency_score": 100.0,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 75.264,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:16:62131.5"
-              }
-            ],
-            "cluster_size": 4,
-            "engine_contract": "zone_engine_v3d",
-            "families": [
-              "reaction",
-              "structure"
-            ],
-            "family_confluence_bonus": 4.0,
-            "kept_source_family": "structure_anchor_v3a",
-            "kept_zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance",
-            "score_components": {
-              "family_confluence_bonus": 4.0,
-              "final_selection_score": 104.0,
-              "winner_base_score": 100.0
-            }
-          },
-          "current_role": "resistance",
-          "daily_major_diagnostics": {
-            "candidate_sources": [
-              "reaction",
-              "structure"
-            ],
-            "has_structure": true,
-            "merge_family_count": 2,
-            "pure_base_only": false,
-            "weight": 1.08
-          },
-          "daily_pocket": {
-            "contract": "daily_macro_pocket_v1",
-            "demoted_ids": [],
-            "id": "1D:selected-pocket:4",
-            "member_count": 1,
-            "member_ids": [
-              "BTCUSDT:1D:structure:flip_anchor:44:55:resistance"
-            ],
-            "reason": "kept: daily macro anchor after pocket consolidation"
-          },
-          "families": {
-            "candidate_families": [
-              "reaction",
-              "structure"
-            ],
-            "candidate_family": "structure",
-            "candidate_sources": [
-              "reaction",
-              "structure"
-            ],
-            "generator_contracts": {
-              "reaction": "zone_engine_v3b",
-              "structure": "zone_engine_v3a"
-            },
-            "merge_family_count": 2,
-            "provenance_summary": {
-              "candidate_families": [
-                "reaction",
-                "structure"
-              ],
-              "generator_contracts": [
-                "reaction",
-                "structure"
-              ],
-              "has_structure": true,
-              "merge_family_count": 2,
-              "primary_family": "structure",
-              "source_versions": [
-                "reaction",
-                "structure"
-              ],
-              "zone_kind": "resistance"
-            },
-            "source_family": "structure_anchor_v3a",
-            "source_family_display": "structure_anchor_v3a",
-            "source_family_primary": "structure",
-            "source_versions": {
-              "reaction": "sr_engine_v2_reaction_family",
-              "structure": "zone_engine_v3_structure_seed_rules_v1"
-            }
-          },
-          "full_zone_bounds": {
-            "high": 69198.7,
-            "low": 61950.375,
-            "mid": 64407.114,
-            "width": 7248.324999999997,
-            "width_atr": 5.002295,
-            "width_bps": 307.3328
-          },
-          "lifecycle_state": "virgin",
-          "operator_core_bounds": {
-            "definition": "representative_family_core",
-            "display_bounds_kind": "core",
-            "high": 64986.11,
-            "low": 63019.1,
-            "mid": 64002.605
-          },
-          "origin_kind": "resistance",
-          "relative_position": "below",
-          "scores": {
-            "body_respect_score": 49.728,
-            "carry_score": 59.1822,
-            "daily_major_provenance_weight": 1.08,
-            "family_confluence_bonus": 3.0,
-            "reaction_efficiency_score": 82.855,
-            "reaction_score": 82.0,
-            "retest_weight": 0.8695,
-            "selection_score": 122.2446,
-            "strength_score": 100.0
-          },
-          "selector_rank": 4,
-          "selector_reason": "kept: daily macro anchor after pocket consolidation",
-          "selector_status": "kept",
-          "selector_surface": "daily_major",
-          "status": "confirmed",
-          "touch_reaction_fields": {
             "first_touch_state": "virgin",
             "interaction_buy": {
               "current_role": "resistance",
-              "distance_to_zone": 17720.175,
-              "distance_to_zone_atr": 12.229244,
+              "distance_to_zone": 14994.79,
+              "distance_to_zone_atr": 10.348371,
               "expected_relation": "above",
               "interaction_bias": "counter",
               "is_aligned": false,
-              "lifecycle_state": "counter_side",
-              "origin_kind": "resistance",
+              "lifecycle_state": "broken",
+              "origin_kind": "mixed",
               "penetration_atr": 0.0,
               "price_relation": "below",
-              "reference_price": 64407.114,
+              "reference_price": 59662.495,
               "relative_position": "below",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "buy",
-              "zone_kind": "resistance",
-              "zone_width_atr": 5.002295
+              "zone_kind": "mixed",
+              "zone_width_atr": 0.603872
             },
             "interaction_role": "resistance",
             "interaction_sell": {
               "current_role": "resistance",
-              "distance_to_zone": 17720.175,
-              "distance_to_zone_atr": 12.229244,
+              "distance_to_zone": 14994.79,
+              "distance_to_zone_atr": 10.348371,
               "expected_relation": "below",
               "interaction_bias": "aligned",
               "is_aligned": true,
               "lifecycle_state": "virgin",
-              "origin_kind": "resistance",
+              "origin_kind": "mixed",
               "penetration_atr": 0.0,
               "price_relation": "below",
-              "reference_price": 64407.114,
+              "reference_price": 59662.495,
               "relative_position": "below",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "sell",
-              "zone_kind": "resistance",
-              "zone_width_atr": 5.002295
+              "zone_kind": "mixed",
+              "zone_width_atr": 0.603872
             },
-            "meaningful_touch_count": 1
+            "meaningful_touch_count": 43
           },
-          "zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance",
-          "zone_kind": "resistance"
-        },
-        {
-          "arbitration_diagnostics": {
-            "candidates": [
-              {
-                "base_score": 100.0,
-                "carry_score": 58.1826,
-                "family": "structure",
-                "high": 48200.0,
-                "kept": true,
-                "kept_reason": "top_ranked_in_cluster",
-                "low": 46820.9,
-                "mid": 47510.45,
-                "reaction_efficiency_score": 85.0,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:392:434:resistance"
-              },
-              {
-                "base_score": 77.2149,
-                "carry_score": 75.1318,
-                "family": "reaction",
-                "high": 50291.248,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 48240.0,
-                "mid": 49265.624,
-                "reaction_efficiency_score": 84.4955,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 77.2149,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:12:49265.624"
-              }
-            ],
-            "cluster_size": 2,
-            "engine_contract": "zone_engine_v3d",
-            "families": [
-              "reaction",
-              "structure"
-            ],
-            "family_confluence_bonus": 4.0,
-            "kept_source_family": "structure_anchor_v3a",
-            "kept_zone_id": "BTCUSDT:1D:structure:flip_anchor:392:434:resistance",
-            "score_components": {
-              "family_confluence_bonus": 4.0,
-              "final_selection_score": 104.0,
-              "winner_base_score": 100.0
-            }
-          },
-          "current_role": "resistance",
-          "daily_major_diagnostics": {
-            "candidate_sources": [
-              "reaction",
-              "structure"
-            ],
-            "has_structure": true,
-            "merge_family_count": 2,
-            "pure_base_only": false,
-            "weight": 1.08
-          },
-          "daily_pocket": {
-            "contract": null,
-            "demoted_ids": null,
-            "id": null,
-            "member_count": null,
-            "member_ids": null,
-            "reason": null
-          },
-          "families": {
-            "candidate_families": [
-              "reaction",
-              "structure"
-            ],
-            "candidate_family": "structure",
-            "candidate_sources": [
-              "reaction",
-              "structure"
-            ],
-            "generator_contracts": {
-              "reaction": "zone_engine_v3b",
-              "structure": "zone_engine_v3a"
-            },
-            "merge_family_count": 2,
-            "provenance_summary": {
-              "candidate_families": [
-                "reaction",
-                "structure"
-              ],
-              "generator_contracts": [
-                "reaction",
-                "structure"
-              ],
-              "has_structure": true,
-              "merge_family_count": 2,
-              "primary_family": "structure",
-              "source_versions": [
-                "reaction",
-                "structure"
-              ],
-              "zone_kind": "resistance"
-            },
-            "source_family": "structure_anchor_v3a",
-            "source_family_display": "structure_anchor_v3a",
-            "source_family_primary": "structure",
-            "source_versions": {
-              "reaction": "sr_engine_v2_reaction_family",
-              "structure": "zone_engine_v3_structure_seed_rules_v1"
-            }
-          },
-          "full_zone_bounds": {
-            "high": 50291.248,
-            "low": 46820.9,
-            "mid": 48388.037,
-            "width": 3470.347999999998,
-            "width_atr": 2.394995,
-            "width_bps": 290.273
-          },
-          "lifecycle_state": "virgin",
-          "operator_core_bounds": {
-            "definition": "representative_family_core",
-            "display_bounds_kind": "core",
-            "high": 48200.0,
-            "low": 46820.9,
-            "mid": 47510.45
-          },
-          "origin_kind": "resistance",
-          "relative_position": "below",
-          "scores": {
-            "body_respect_score": 47.9286,
-            "carry_score": 58.1826,
-            "daily_major_provenance_weight": 1.08,
-            "family_confluence_bonus": 3.0,
-            "reaction_efficiency_score": 85.0,
-            "reaction_score": 82.0,
-            "retest_weight": 0.8683,
-            "selection_score": 122.2162,
-            "strength_score": 100.0
-          },
-          "selector_rank": 5,
-          "selector_reason": "kept: daily intermediate upside coverage anchor",
-          "selector_status": "kept",
-          "selector_surface": "daily_major",
-          "status": "confirmed",
-          "touch_reaction_fields": {
-            "first_touch_state": "virgin",
-            "interaction_buy": {
-              "current_role": "resistance",
-              "distance_to_zone": 2590.7,
-              "distance_to_zone_atr": 1.787923,
-              "expected_relation": "above",
-              "interaction_bias": "counter",
-              "is_aligned": false,
-              "lifecycle_state": "counter_side",
-              "origin_kind": "resistance",
-              "penetration_atr": 0.0,
-              "price_relation": "below",
-              "reference_price": 48388.037,
-              "relative_position": "below",
-              "role_semantics_contract": "zone_role_semantics_v1",
-              "side": "buy",
-              "zone_kind": "resistance",
-              "zone_width_atr": 2.394995
-            },
-            "interaction_role": "resistance",
-            "interaction_sell": {
-              "current_role": "resistance",
-              "distance_to_zone": 2590.7,
-              "distance_to_zone_atr": 1.787923,
-              "expected_relation": "below",
-              "interaction_bias": "aligned",
-              "is_aligned": true,
-              "lifecycle_state": "virgin",
-              "origin_kind": "resistance",
-              "penetration_atr": 0.0,
-              "price_relation": "below",
-              "reference_price": 48388.037,
-              "relative_position": "below",
-              "role_semantics_contract": "zone_role_semantics_v1",
-              "side": "sell",
-              "zone_kind": "resistance",
-              "zone_width_atr": 2.394995
-            },
-            "meaningful_touch_count": 1
-          },
-          "zone_id": "BTCUSDT:1D:structure:flip_anchor:392:434:resistance",
-          "zone_kind": "resistance"
+          "zone_id": "BTCUSDT:1D:15:59662.495",
+          "zone_kind": "mixed"
         }
       ]
     },
@@ -2503,15 +2055,17 @@
             "demoted_ids": [
               "BTCUSDT:1D:base:320:resistance",
               "BTCUSDT:1D:base:198:resistance",
-              "BTCUSDT:1D:structure:bos_anchor:225:228:support"
+              "BTCUSDT:1D:base:1278:resistance",
+              "BTCUSDT:1D:base:1331:support"
             ],
-            "id": "1D:selected-pocket:3",
-            "member_count": 4,
+            "id": "1D:selected-pocket:4",
+            "member_count": 5,
             "member_ids": [
               "BTCUSDT:1D:base:320:resistance",
               "BTCUSDT:1D:base:198:resistance",
               "BTCUSDT:1D:base:1087:support",
-              "BTCUSDT:1D:structure:bos_anchor:225:228:support"
+              "BTCUSDT:1D:base:1278:resistance",
+              "BTCUSDT:1D:base:1331:support"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
           },
@@ -2771,13 +2325,10 @@
           },
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
-            "demoted_ids": [
-              "BTCUSDT:1D:structure:bos_anchor:899:966:support"
-            ],
-            "id": "1D:selected-pocket:2",
-            "member_count": 2,
+            "demoted_ids": [],
+            "id": "1D:selected-pocket:3",
+            "member_count": 1,
             "member_ids": [
-              "BTCUSDT:1D:structure:bos_anchor:899:966:support",
               "BTCUSDT:1D:base:462:resistance"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
@@ -2840,10 +2391,10 @@
           },
           "lifecycle_state": "counter_side",
           "operator_core_bounds": {
-            "definition": "overlap_density_core",
+            "definition": "overlap_density_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 29686.7,
-            "low": 29070.0,
+            "high": 29766.66285714,
+            "low": 28990.03714286,
             "mid": 29378.35
           },
           "origin_kind": "resistance",
@@ -3023,7 +2574,7 @@
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
             "demoted_ids": [],
-            "id": "1D:selected-pocket:1",
+            "id": "1D:selected-pocket:2",
             "member_count": 1,
             "member_ids": [
               "BTCUSDT:1D:base:611:resistance"
@@ -3160,73 +2711,57 @@
           "arbitration_diagnostics": {
             "candidates": [
               {
-                "base_score": 100.0,
-                "carry_score": 59.1822,
-                "family": "structure",
-                "high": 64986.11,
+                "base_score": 96.7225,
+                "carry_score": 87.0,
+                "family": "base",
+                "high": 18013.2,
                 "kept": true,
                 "kept_reason": "top_ranked_in_cluster",
-                "low": 63019.1,
-                "mid": 64002.605,
-                "reaction_efficiency_score": 85.0,
-                "source_family": "structure_anchor_v3a",
+                "low": 16900.1,
+                "mid": 17456.65,
+                "reaction_efficiency_score": 69.2302,
+                "source_family": "base_shelf_v3b",
                 "status": "confirmed",
-                "strength_score": 100.0,
+                "strength_score": 96.7225,
                 "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance"
+                "zone_id": "BTCUSDT:1D:base:677:support"
               },
               {
-                "base_score": 100.0,
-                "carry_score": 60.886,
+                "base_score": 93.0286,
+                "carry_score": 61.2289,
                 "family": "structure",
-                "high": 69198.7,
+                "high": 20457.3,
                 "kept": false,
                 "kept_reason": "clustered_under_stronger_candidate",
-                "low": 64920.13,
-                "mid": 67059.415,
-                "reaction_efficiency_score": 84.389,
+                "low": 17593.2,
+                "mid": 19025.25,
+                "reaction_efficiency_score": 84.8187,
                 "source_family": "structure_anchor_v3a",
                 "status": "confirmed",
-                "strength_score": 100.0,
+                "strength_score": 93.0286,
                 "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:254:278:resistance"
-              },
-              {
-                "base_score": 35.3843,
-                "carry_score": 47.9456,
-                "family": "reaction",
-                "high": 64458.56,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 59364.998,
-                "mid": 61911.779,
-                "reaction_efficiency_score": 29.6849,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 35.3843,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:6:61911.779"
+                "zone_id": "BTCUSDT:1D:structure:flip_anchor:474:505:support"
               }
             ],
-            "cluster_size": 3,
+            "cluster_size": 2,
             "engine_contract": "zone_engine_v3d",
             "families": [
-              "reaction",
+              "base",
               "structure"
             ],
             "family_confluence_bonus": 4.0,
-            "kept_source_family": "structure_anchor_v3a",
-            "kept_zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance",
+            "kept_source_family": "base_shelf_v3b",
+            "kept_zone_id": "BTCUSDT:1D:base:677:support",
             "score_components": {
               "family_confluence_bonus": 4.0,
-              "final_selection_score": 104.0,
-              "winner_base_score": 100.0
+              "final_selection_score": 100.7225,
+              "winner_base_score": 96.7225
             }
           },
           "current_role": "support",
           "daily_major_diagnostics": {
             "candidate_sources": [
-              "reaction",
+              "base",
               "structure"
             ],
             "has_structure": true,
@@ -3237,82 +2772,82 @@
           "daily_pocket": {
             "contract": "daily_macro_pocket_v1",
             "demoted_ids": [],
-            "id": "1D:selected-pocket:4",
+            "id": "1D:selected-pocket:1",
             "member_count": 1,
             "member_ids": [
-              "BTCUSDT:1D:structure:flip_anchor:44:55:resistance"
+              "BTCUSDT:1D:base:677:support"
             ],
             "reason": "kept: daily macro anchor after pocket consolidation"
           },
           "families": {
             "candidate_families": [
-              "reaction",
+              "base",
               "structure"
             ],
-            "candidate_family": "structure",
+            "candidate_family": "base",
             "candidate_sources": [
-              "reaction",
+              "base",
               "structure"
             ],
             "generator_contracts": {
-              "reaction": "zone_engine_v3b",
+              "base": "zone_engine_v3b",
               "structure": "zone_engine_v3a"
             },
             "merge_family_count": 2,
             "provenance_summary": {
               "candidate_families": [
-                "reaction",
+                "base",
                 "structure"
               ],
               "generator_contracts": [
-                "reaction",
+                "base",
                 "structure"
               ],
               "has_structure": true,
               "merge_family_count": 2,
-              "primary_family": "structure",
+              "primary_family": "base",
               "source_versions": [
-                "reaction",
+                "base",
                 "structure"
               ],
-              "zone_kind": "resistance"
+              "zone_kind": "support"
             },
-            "source_family": "structure_anchor_v3a",
-            "source_family_display": "structure_anchor_v3a",
-            "source_family_primary": "structure",
+            "source_family": "base_shelf_v3b",
+            "source_family_display": "base_shelf_v3b",
+            "source_family_primary": "base",
             "source_versions": {
-              "reaction": "sr_engine_v2_reaction_family",
+              "base": "zone_engine_v3b_base_v2",
               "structure": "zone_engine_v3_structure_seed_rules_v1"
             }
           },
           "full_zone_bounds": {
-            "high": 69198.7,
-            "low": 59364.998,
-            "mid": 64324.59966667,
-            "width": 9833.701999999997,
-            "width_atr": 2.532417,
-            "width_bps": 307.3328
+            "high": 20457.3,
+            "low": 16900.1,
+            "mid": 18240.95,
+            "width": 3557.2000000000007,
+            "width_atr": 0.916065,
+            "width_bps": 637.6367
           },
-          "lifecycle_state": "counter_side",
+          "lifecycle_state": "virgin",
           "operator_core_bounds": {
-            "definition": "overlap_density_core",
+            "definition": "overlap_density_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 64986.11,
-            "low": 64920.13,
-            "mid": 64953.12
+            "high": 18191.51305639,
+            "low": 17414.88694361,
+            "mid": 17803.2
           },
-          "origin_kind": "resistance",
+          "origin_kind": "support",
           "relative_position": "above",
           "scores": {
-            "body_respect_score": 49.728,
-            "carry_score": 59.1822,
+            "body_respect_score": 66.7882,
+            "carry_score": 87.0,
             "daily_major_provenance_weight": 1.08,
             "family_confluence_bonus": 3.0,
-            "reaction_efficiency_score": 85.0,
-            "reaction_score": 82.0,
-            "retest_weight": 0.8695,
-            "selection_score": 122.5878,
-            "strength_score": 100.0
+            "reaction_efficiency_score": 69.2302,
+            "reaction_score": 71.5998,
+            "retest_weight": 0.8902,
+            "selection_score": 121.6958,
+            "strength_score": 96.7225
           },
           "selector_rank": 4,
           "selector_reason": "kept: daily macro anchor after pocket consolidation",
@@ -3320,48 +2855,48 @@
           "selector_surface": "daily_major",
           "status": "confirmed",
           "touch_reaction_fields": {
-            "first_touch_state": "counter_side",
+            "first_touch_state": "virgin",
             "interaction_buy": {
               "current_role": "support",
-              "distance_to_zone": 25382.2,
-              "distance_to_zone_atr": 6.536534,
+              "distance_to_zone": 74123.6,
+              "distance_to_zone_atr": 19.088629,
               "expected_relation": "above",
               "interaction_bias": "aligned",
               "is_aligned": true,
-              "lifecycle_state": "counter_side",
-              "origin_kind": "resistance",
+              "lifecycle_state": "virgin",
+              "origin_kind": "support",
               "penetration_atr": 0.0,
               "price_relation": "above",
-              "reference_price": 64324.59966667,
+              "reference_price": 18240.95,
               "relative_position": "above",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "buy",
-              "zone_kind": "resistance",
-              "zone_width_atr": 2.532417
+              "zone_kind": "support",
+              "zone_width_atr": 0.916065
             },
             "interaction_role": "support",
             "interaction_sell": {
               "current_role": "support",
-              "distance_to_zone": 25382.2,
-              "distance_to_zone_atr": 6.536534,
+              "distance_to_zone": 74123.6,
+              "distance_to_zone_atr": 19.088629,
               "expected_relation": "below",
               "interaction_bias": "counter",
               "is_aligned": false,
-              "lifecycle_state": "broken",
-              "origin_kind": "resistance",
+              "lifecycle_state": "counter_side",
+              "origin_kind": "support",
               "penetration_atr": 0.0,
               "price_relation": "above",
-              "reference_price": 64324.59966667,
+              "reference_price": 18240.95,
               "relative_position": "above",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "sell",
-              "zone_kind": "resistance",
-              "zone_width_atr": 2.532417
+              "zone_kind": "support",
+              "zone_width_atr": 0.916065
             },
-            "meaningful_touch_count": 1
+            "meaningful_touch_count": 5
           },
-          "zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance",
-          "zone_kind": "resistance"
+          "zone_id": "BTCUSDT:1D:base:677:support",
+          "zone_kind": "support"
         }
       ]
     },
@@ -4533,10 +4068,10 @@
           },
           "lifecycle_state": "counter_side",
           "operator_core_bounds": {
-            "definition": "overlap_density_core",
+            "definition": "overlap_density_core_width_floored",
             "display_bounds_kind": "core",
-            "high": 85600.0,
-            "low": 85570.8,
+            "high": 85856.22362898,
+            "low": 85314.57637102,
             "mid": 85585.4
           },
           "origin_kind": "support",
@@ -4606,78 +4141,44 @@
             "candidates": [
               {
                 "base_score": 100.0,
-                "carry_score": 59.1822,
-                "family": "structure",
-                "high": 64986.11,
+                "carry_score": 93.0,
+                "family": "base",
+                "high": 59914.9,
                 "kept": true,
                 "kept_reason": "top_ranked_in_cluster",
-                "low": 63019.1,
-                "mid": 64002.605,
-                "reaction_efficiency_score": 85.0,
-                "source_family": "structure_anchor_v3a",
+                "low": 57093.0,
+                "mid": 58503.95,
+                "reaction_efficiency_score": 82.0504,
+                "source_family": "base_shelf_v3b",
                 "status": "confirmed",
                 "strength_score": 100.0,
                 "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance"
-              },
-              {
-                "base_score": 100.0,
-                "carry_score": 60.886,
-                "family": "structure",
-                "high": 69198.7,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 64920.13,
-                "mid": 67059.415,
-                "reaction_efficiency_score": 81.521,
-                "source_family": "structure_anchor_v3a",
-                "status": "confirmed",
-                "strength_score": 100.0,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:structure:flip_anchor:254:278:resistance"
-              },
-              {
-                "base_score": 63.7752,
-                "carry_score": 54.5369,
-                "family": "reaction",
-                "high": 66428.02,
-                "kept": false,
-                "kept_reason": "clustered_under_stronger_candidate",
-                "low": 63613.62,
-                "mid": 65020.82,
-                "reaction_efficiency_score": 42.9029,
-                "source_family": "reaction_family",
-                "status": "confirmed",
-                "strength_score": 63.7752,
-                "tf": "1D",
-                "zone_id": "BTCUSDT:1D:9:65020.82"
+                "zone_id": "BTCUSDT:1D:base:1278:resistance"
               }
             ],
-            "cluster_size": 3,
+            "cluster_size": 1,
             "engine_contract": "zone_engine_v3d",
             "families": [
-              "reaction",
-              "structure"
+              "base"
             ],
-            "family_confluence_bonus": 4.0,
-            "kept_source_family": "structure_anchor_v3a",
-            "kept_zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance",
+            "family_confluence_bonus": 0.0,
+            "kept_source_family": "base_shelf_v3b",
+            "kept_zone_id": "BTCUSDT:1D:base:1278:resistance",
             "score_components": {
-              "family_confluence_bonus": 4.0,
-              "final_selection_score": 104.0,
+              "family_confluence_bonus": 0.0,
+              "final_selection_score": 100.0,
               "winner_base_score": 100.0
             }
           },
-          "current_role": "containing",
+          "current_role": "support",
           "daily_major_diagnostics": {
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "base"
             ],
-            "has_structure": true,
-            "merge_family_count": 2,
-            "pure_base_only": false,
-            "weight": 1.08
+            "has_structure": false,
+            "merge_family_count": 1,
+            "pure_base_only": true,
+            "weight": 0.94
           },
           "daily_pocket": {
             "contract": null,
@@ -4689,72 +4190,65 @@
           },
           "families": {
             "candidate_families": [
-              "reaction",
-              "structure"
+              "base"
             ],
-            "candidate_family": "structure",
+            "candidate_family": "base",
             "candidate_sources": [
-              "reaction",
-              "structure"
+              "base"
             ],
             "generator_contracts": {
-              "reaction": "zone_engine_v3b",
-              "structure": "zone_engine_v3a"
+              "base": "zone_engine_v3b"
             },
-            "merge_family_count": 2,
+            "merge_family_count": 1,
             "provenance_summary": {
               "candidate_families": [
-                "reaction",
-                "structure"
+                "base"
               ],
               "generator_contracts": [
-                "reaction",
-                "structure"
+                "base"
               ],
-              "has_structure": true,
-              "merge_family_count": 2,
-              "primary_family": "structure",
+              "has_structure": false,
+              "merge_family_count": 1,
+              "primary_family": "base",
               "source_versions": [
-                "reaction",
-                "structure"
+                "base"
               ],
               "zone_kind": "resistance"
             },
-            "source_family": "structure_anchor_v3a",
-            "source_family_display": "structure_anchor_v3a",
-            "source_family_primary": "structure",
+            "source_family": "base_shelf_v3b",
+            "source_family_display": "base_shelf_v3b",
+            "source_family_primary": "base",
             "source_versions": {
-              "reaction": "sr_engine_v2_reaction_family",
-              "structure": "zone_engine_v3_structure_seed_rules_v1"
+              "base": "zone_engine_v3b_base_v2"
             }
           },
           "full_zone_bounds": {
-            "high": 69198.7,
-            "low": 63019.1,
-            "mid": 65360.94666667,
-            "width": 6179.5999999999985,
-            "width_atr": 2.281781,
-            "width_bps": 307.3328
+            "high": 59914.9,
+            "low": 57093.0,
+            "mid": 58503.95,
+            "width": 2821.9000000000015,
+            "width_atr": 1.04197,
+            "width_bps": 482.3435
           },
           "lifecycle_state": "counter_side",
           "operator_core_bounds": {
-            "definition": "overlap_density_core",
+            "definition": "midpoint_narrowed_core",
             "display_bounds_kind": "core",
-            "high": 64986.11,
-            "low": 64920.13,
-            "mid": 64953.12
+            "high": 59279.9725,
+            "low": 57727.9275,
+            "mid": 58503.95
           },
           "origin_kind": "resistance",
-          "relative_position": "inside",
+          "relative_position": "above",
           "scores": {
-            "body_respect_score": 49.728,
-            "carry_score": 59.1822,
-            "daily_major_provenance_weight": 1.08,
-            "family_confluence_bonus": 3.0,
-            "reaction_efficiency_score": 85.0,
-            "reaction_score": 82.0,
-            "retest_weight": 0.8695,
-            "selection_score": 122.5878,
+            "body_respect_score": 59.0551,
+            "carry_score": 93.0,
+            "daily_major_provenance_weight": 0.94,
+            "family_confluence_bonus": 0.0,
+            "reaction_efficiency_score": 82.0504,
+            "reaction_score": 92.9106,
+            "retest_weight": 0.8901,
+            "selection_score": 115.7179,
             "strength_score": 100.0
           },
           "selector_rank": 6,
@@ -4765,45 +4259,45 @@
           "touch_reaction_fields": {
             "first_touch_state": "counter_side",
             "interaction_buy": {
-              "current_role": "containing",
-              "distance_to_zone": 0.0,
-              "distance_to_zone_atr": 0.0,
+              "current_role": "support",
+              "distance_to_zone": 8326.6,
+              "distance_to_zone_atr": 3.074548,
               "expected_relation": "above",
               "interaction_bias": "aligned",
               "is_aligned": true,
               "lifecycle_state": "counter_side",
               "origin_kind": "resistance",
-              "penetration_atr": 0.35344,
-              "price_relation": "inside",
-              "reference_price": 65360.94666667,
-              "relative_position": "inside",
+              "penetration_atr": 0.0,
+              "price_relation": "above",
+              "reference_price": 58503.95,
+              "relative_position": "above",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "buy",
               "zone_kind": "resistance",
-              "zone_width_atr": 2.281781
+              "zone_width_atr": 1.04197
             },
-            "interaction_role": "containing",
+            "interaction_role": "support",
             "interaction_sell": {
-              "current_role": "containing",
-              "distance_to_zone": 0.0,
-              "distance_to_zone_atr": 0.0,
+              "current_role": "support",
+              "distance_to_zone": 8326.6,
+              "distance_to_zone_atr": 3.074548,
               "expected_relation": "below",
-              "interaction_bias": "aligned",
-              "is_aligned": true,
-              "lifecycle_state": "deep_test",
+              "interaction_bias": "counter",
+              "is_aligned": false,
+              "lifecycle_state": "broken",
               "origin_kind": "resistance",
-              "penetration_atr": 1.92834,
-              "price_relation": "inside",
-              "reference_price": 65360.94666667,
-              "relative_position": "inside",
+              "penetration_atr": 0.0,
+              "price_relation": "above",
+              "reference_price": 58503.95,
+              "relative_position": "above",
               "role_semantics_contract": "zone_role_semantics_v1",
               "side": "sell",
               "zone_kind": "resistance",
-              "zone_width_atr": 2.281781
+              "zone_width_atr": 1.04197
             },
-            "meaningful_touch_count": 1
+            "meaningful_touch_count": 5
           },
-          "zone_id": "BTCUSDT:1D:structure:flip_anchor:44:55:resistance",
+          "zone_id": "BTCUSDT:1D:base:1278:resistance",
           "zone_kind": "resistance"
         }
       ]
