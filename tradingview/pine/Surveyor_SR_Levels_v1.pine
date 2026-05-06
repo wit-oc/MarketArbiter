@@ -1723,7 +1723,6 @@ f_build_candidate_families() =>
     f_clear_zone_store()
     barsReady = bar_index + 1
     barsToUse = math.min(math.min(candidateLookbackBars, barsReady), 3000)
-    candidateBarsUsed := barsToUse
     atrRef = f_local_atr(barsToUse)
     sCount = barsToUse >= minHistoryBars ? f_build_structure_candidates(barsToUse, atrRef) : 0
     bCount = barsToUse >= minHistoryBars ? f_build_base_candidates(barsToUse, atrRef) : 0
@@ -1735,7 +1734,7 @@ f_build_candidate_families() =>
         mCount := mergedCountBuilt
         scCount := scoredCountBuilt
         f_select_daily_majors(close)
-    [sCount, bCount, rCount, mCount, scCount]
+    [sCount, bCount, rCount, mCount, scCount, barsToUse]
 
 f_render_selected_zones() =>
     storeSize = f_zone_store_size()
@@ -1836,12 +1835,13 @@ f_update_scaffold_notice(_visibleCount, _currentNotice, _noticeAtr, _isLastBar) 
 noticeAtr = ta.atr(14)
 if barstate.islast
     selectedZoneCount := 0
-    [builtStructureCount, builtBaseCount, builtReactionCount, builtMergedCount, builtScoredCount] = f_build_candidate_families()
+    [builtStructureCount, builtBaseCount, builtReactionCount, builtMergedCount, builtScoredCount, builtCandidateBarsUsed] = f_build_candidate_families()
     structureCandidateCount := builtStructureCount
     baseCandidateCount := builtBaseCount
     reactionCandidateCount := builtReactionCount
     mergedZoneCount := builtMergedCount
     scoredZoneCount := builtScoredCount
+    candidateBarsUsed := builtCandidateBarsUsed
     visibleCount = f_render_selected_zones()
     selectedZoneCount := visibleCount
     f_update_debug_table(visibleCount)
