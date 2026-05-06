@@ -1932,7 +1932,7 @@
       "low": 102000.0
     }
   ],
-  "generated_at": "2026-05-05T23:13:49.244258Z",
+  "generated_at": "2026-05-06T01:52:52.914871Z",
   "merged_candidates": [
     {
       "candidate_families": [
@@ -3790,10 +3790,10 @@
       },
       "meaningful_touch_count": 4,
       "operator_core_bounds": {
-        "definition": "overlap_density_core",
+        "definition": "overlap_density_core_width_floored",
         "display_bounds_kind": "core",
-        "high": 85600.0,
-        "low": 85570.8,
+        "high": 85856.22362898,
+        "low": 85314.57637102,
         "mid": 85585.4
       },
       "origin_kind": "support",
@@ -8597,8 +8597,8 @@
         "reaction"
       ],
       "candidate_family": "base",
-      "core_high": 85600.0,
-      "core_low": 85570.8,
+      "core_high": 85856.22362898,
+      "core_low": 85314.57637102,
       "core_mid": 85585.4,
       "debug_bucket": null,
       "full_high": 88651.2,

@@ -1,6 +1,6 @@
 # BTCUSDT 1D SR Selector Decomposition
 
-Generated at: `2026-05-05T23:13:49.244258Z`
+Generated at: `2026-05-06T01:52:52.914871Z`
 JSON artifact: `artifacts/sr_selector_decomposition/btcusdt_1d_20260504_decomposition.json`
 
 ## Data-source caveat
@@ -29,7 +29,7 @@ Resolved source candle timestamp: `2026-03-31T00:00:00Z`
 | 2 | `BTCUSDT:1D:base:1087:support` | `base,reaction,structure` | 50512.70-51316.90 | 48888.00-58144.50 | 4 | 100.00 | 133.06 | kept: daily macro anchor after pocket consolidation |
 | 3 | `BTCUSDT:1D:base:961:support` | `base,reaction,structure` | 28076.00-30374.60 | 24581.00-42882.54 | 5 | 100.00 | 130.77 | kept: daily macro anchor after pocket consolidation |
 | 4 | `BTCUSDT:1D:base:1586:support` | `base,reaction` | 107200.00-109732.30 | 102978.10-111160.00 | 6 | 100.00 | 127.33 | kept: daily macro anchor after pocket consolidation |
-| 5 | `BTCUSDT:1D:base:1507:support` | `base,reaction` | 85570.80-85600.00 | 83063.90-88651.20 | 4 | 100.00 | 125.35 | kept: daily macro anchor after pocket consolidation |
+| 5 | `BTCUSDT:1D:base:1507:support` | `base,reaction` | 85314.58-85856.22 | 83063.90-88651.20 | 4 | 100.00 | 125.35 | kept: daily macro anchor after pocket consolidation |
 | 6 | `BTCUSDT:1D:base:1278:resistance` | `base` | 57727.93-59279.97 | 57093.00-59914.90 | 5 | 100.00 | 115.72 | kept: daily current-regime coverage anchor |
 
 ## Focus Bands
@@ -73,7 +73,7 @@ Last close: `68241.50`
 
 | Zone | Families | Full bounds | Core bounds | Touches | Strength | Selection | Bucket | Reason |
 |---|---|---|---|---:|---:|---:|---|---|
-| `BTCUSDT:1D:base:1507:support` | `base,reaction` | 83063.90-88651.20 | 85570.80-85600.00 | 4 | 100.00 | 125.35 | `selected` | kept: daily macro anchor after pocket consolidation |
+| `BTCUSDT:1D:base:1507:support` | `base,reaction` | 83063.90-88651.20 | 85314.58-85856.22 | 4 | 100.00 | 125.35 | `selected` | kept: daily macro anchor after pocket consolidation |
 
 ### 108k `102000-112000`
 
