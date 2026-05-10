@@ -1,0 +1,259 @@
+{
+  "coverage": {
+    "available_timeframes": [
+      "5m",
+      "4H"
+    ],
+    "missing_timeframes": [
+      "1D",
+      "1W"
+    ],
+    "required_timeframes": [
+      "5m",
+      "4H",
+      "1D",
+      "1W"
+    ]
+  },
+  "datasets": {
+    "dynamic_levels": {
+      "contract_version": "dynamic_levels_v1",
+      "family": "dynamic_levels",
+      "issues": [],
+      "payload": {
+        "fixture_family": "dynamic_levels",
+        "mode": "live"
+      },
+      "provenance": {
+        "build_mode": "live",
+        "source": "fixture"
+      },
+      "status": "complete",
+      "summary": {
+        "dataset_mode": "live",
+        "issue_count": 0,
+        "timeframe_count": 2
+      },
+      "timeframes": {
+        "4H": {
+          "dataset_mode": "live",
+          "status": "complete"
+        },
+        "5m": {
+          "dataset_mode": "live",
+          "status": "complete"
+        }
+      }
+    },
+    "feed_state": {
+      "contract_version": "feed_state_v1",
+      "family": "feed_state",
+      "issues": [
+        {
+          "family": "feed_state",
+          "issue_kind": "stale_input",
+          "reason": "fixture_degraded",
+          "timeframe": "5m"
+        }
+      ],
+      "payload": {
+        "fixture_family": "feed_state",
+        "mode": "live"
+      },
+      "provenance": {
+        "build_mode": "live",
+        "source": "fixture"
+      },
+      "status": "stale",
+      "summary": {
+        "dataset_mode": "live",
+        "issue_count": 1,
+        "timeframe_count": 2
+      },
+      "timeframes": {
+        "4H": {
+          "dataset_mode": "live",
+          "status": "stale"
+        },
+        "5m": {
+          "dataset_mode": "live",
+          "status": "stale"
+        }
+      }
+    },
+    "fib_context": {
+      "contract_version": "fib_context_v1",
+      "family": "fib_context",
+      "issues": [],
+      "payload": {
+        "fixture_family": "fib_context",
+        "mode": "live"
+      },
+      "provenance": {
+        "build_mode": "live",
+        "source": "fixture"
+      },
+      "status": "complete",
+      "summary": {
+        "dataset_mode": "live",
+        "issue_count": 0,
+        "timeframe_count": 2
+      },
+      "timeframes": {
+        "4H": {
+          "dataset_mode": "live",
+          "status": "complete"
+        },
+        "5m": {
+          "dataset_mode": "live",
+          "status": "complete"
+        }
+      }
+    },
+    "interaction_lifecycle": {
+      "contract_version": "interaction_lifecycle_v1",
+      "family": "interaction_lifecycle",
+      "issues": [],
+      "payload": {
+        "fixture_family": "interaction_lifecycle",
+        "mode": "live"
+      },
+      "provenance": {
+        "build_mode": "live",
+        "source": "fixture"
+      },
+      "status": "complete",
+      "summary": {
+        "dataset_mode": "live",
+        "issue_count": 0,
+        "timeframe_count": 2
+      },
+      "timeframes": {
+        "4H": {
+          "dataset_mode": "live",
+          "status": "complete"
+        },
+        "5m": {
+          "dataset_mode": "live",
+          "status": "complete"
+        }
+      }
+    },
+    "sr_zones": {
+      "contract_version": "sr_zones_v1",
+      "family": "sr_zones",
+      "issues": [],
+      "payload": {
+        "fixture_family": "sr_zones",
+        "mode": "live"
+      },
+      "provenance": {
+        "build_mode": "live",
+        "source": "fixture"
+      },
+      "status": "complete",
+      "summary": {
+        "dataset_mode": "live",
+        "issue_count": 0,
+        "timeframe_count": 2
+      },
+      "timeframes": {
+        "4H": {
+          "dataset_mode": "live",
+          "status": "complete"
+        },
+        "5m": {
+          "dataset_mode": "live",
+          "status": "complete"
+        }
+      }
+    },
+    "structure_state": {
+      "contract_version": "structure_state_v1",
+      "family": "structure_state",
+      "issues": [
+        {
+          "family": "structure_state",
+          "issue_kind": "upstream_feed_degraded",
+          "reason": "fixture_degraded"
+        }
+      ],
+      "payload": {
+        "fixture_family": "structure_state",
+        "mode": "live"
+      },
+      "provenance": {
+        "build_mode": "live",
+        "source": "fixture"
+      },
+      "status": "degraded",
+      "summary": {
+        "dataset_mode": "live",
+        "issue_count": 1,
+        "timeframe_count": 2
+      },
+      "timeframes": {
+        "4H": {
+          "dataset_mode": "live",
+          "status": "degraded"
+        },
+        "5m": {
+          "dataset_mode": "live",
+          "status": "degraded"
+        }
+      }
+    }
+  },
+  "delivery_profiles": {
+    "arbiter_core": [
+      "feed_state",
+      "structure_state",
+      "sr_zones",
+      "fib_context",
+      "dynamic_levels"
+    ],
+    "backtest_core": [
+      "feed_state",
+      "structure_state",
+      "sr_zones",
+      "fib_context",
+      "dynamic_levels",
+      "interaction_lifecycle"
+    ],
+    "ui_full": [
+      "feed_state",
+      "structure_state",
+      "sr_zones",
+      "fib_context",
+      "dynamic_levels",
+      "interaction_lifecycle"
+    ]
+  },
+  "diagnostics": {
+    "issue_count": 2,
+    "issues": [
+      {
+        "family": "feed_state",
+        "issue_kind": "stale_input",
+        "reason": "fixture_degraded",
+        "timeframe": "5m"
+      },
+      {
+        "family": "structure_state",
+        "issue_kind": "upstream_feed_degraded",
+        "reason": "fixture_degraded"
+      }
+    ]
+  },
+  "meta": {
+    "as_of_ts": 1777319700,
+    "build_mode": "live",
+    "bundle_contract": "surveyor_unified_dataset_bundle_v1",
+    "bundle_id": "fixture:partial-degraded",
+    "bundle_status": "degraded",
+    "continuity_state": "degraded",
+    "legacy_packet_status": "degraded",
+    "primary_feed_provider": "blofin",
+    "symbol": "BTCUSDT"
+  }
+}

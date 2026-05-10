@@ -11,6 +11,12 @@ from typing import Callable
 
 from .market_data import CandleValidationError, MarketDataProvider, upsert_market_candles
 from .market_quality import TIMEFRAME_MS, enforce_candle_quality
+from market_arbiter.feed.provider_policy import (
+    ProviderAccessGovernor,
+    ProviderCooldownError,
+    ProviderIpFrozenError,
+    ProviderPolicyBlockedError,
+)
 
 
 class ProviderTimeoutError(RuntimeError): ...
@@ -69,7 +75,7 @@ class CircuitBreaker:
 
 
 class RateBudgetManager:
-    def __init__(self, *, max_tokens: int = 30, interval_ms: int = 60_000) -> None:
+    def __init__(self, *, max_tokens: int = 120, interval_ms: int = 60_000) -> None:
         self.max_tokens = max(1, int(max_tokens))
         self.interval_ms = max(1, int(interval_ms))
         self._calls: dict[tuple[str, str], list[int]] = {}
@@ -99,8 +105,11 @@ class MarketDataScheduler:
         retry_attempts: int = 3,
         retry_base_delay_ms: int = 250,
         retry_max_delay_ms: int = 2000,
+        request_spacing_ms: int = 0,
         rand: Callable[[], float] | None = None,
         sleep_fn: Callable[[float], None] | None = None,
+        provider_governor: ProviderAccessGovernor | None = None,
+        request_class: str = "rest_history",
     ) -> None:
         self.conn = conn
         self.provider = provider
@@ -112,8 +121,12 @@ class MarketDataScheduler:
         self.retry_attempts = max(1, int(retry_attempts))
         self.retry_base_delay_ms = max(1, int(retry_base_delay_ms))
         self.retry_max_delay_ms = max(1, int(retry_max_delay_ms))
+        self.request_spacing_ms = max(0, int(request_spacing_ms))
+        self._last_request_monotonic_ms = 0.0
         self.rand = rand or random.random
         self.sleep_fn = sleep_fn or time.sleep
+        self.provider_governor = provider_governor
+        self.request_class = request_class
 
     def run_cycle(self, key: SchedulerKey, *, now_ms: int, trace_id: str) -> dict:
         tf_ms = TIMEFRAME_MS[key.timeframe]
@@ -131,9 +144,18 @@ class MarketDataScheduler:
 
             expected_next_open = ((cp_last_ts or (now_ms - tf_ms)) // tf_ms) * tf_ms + tf_ms
             if expected_next_open + self.close_lag_ms > now_ms:
-                return self._snapshot(key, cp_last_ts=cp_last_ts, now_ms=now_ms, state=(cp["state"] if cp else "ok"), reason_codes=[], trace_id=trace_id)
+                state = cp["state"] if cp else "ok"
+                if cp is not None and state in {"degraded", "tripped"}:
+                    state = "ok"
+                    self.breaker.record_success(key.provider_id, key.venue, now_ms)
+                    self._save_checkpoint(key, now_ms=now_ms, state="ok", reason_code=None, trace_id=trace_id, last_ts_open_ms=cp_last_ts, failure_count=0)
+                return self._snapshot(key, cp_last_ts=cp_last_ts, now_ms=now_ms, state=state, reason_codes=[], trace_id=trace_id)
 
-            candles = self._fetch_ohlcv_with_retry(key, since_ms=cp_last_ts, limit=1000, now_ms=now_ms)
+            since_ms = (cp_last_ts + tf_ms) if cp_last_ts is not None else None
+            candles = self._fetch_ohlcv_with_retry(key, since_ms=since_ms, limit=1000, now_ms=now_ms)
+            candles = self._closed_candles(key, candles, now_ms=now_ms)
+            if cp_last_ts is not None:
+                candles = [candle for candle in candles if int(candle.ts_open_ms) > int(cp_last_ts)]
             if not candles:
                 freshness = (now_ms - cp_last_ts) if cp_last_ts is not None else (self.max_backfill_bars * tf_ms)
                 if freshness > (tf_ms * 3):
@@ -141,7 +163,7 @@ class MarketDataScheduler:
                     return self._snapshot(key, cp_last_ts=cp_last_ts, now_ms=now_ms, state="degraded", reason_codes=["CANDLE_STALE_WINDOW"], trace_id=trace_id)
                 return self._snapshot(key, cp_last_ts=cp_last_ts, now_ms=now_ms, state=(cp["state"] if cp else "ok"), reason_codes=[], trace_id=trace_id)
 
-            quality = enforce_candle_quality(candles, timeframe=key.timeframe, now_ms=now_ms)
+            quality = enforce_candle_quality(candles, timeframe=key.timeframe, now_ms=now_ms, check_stale=False)
             summary = upsert_market_candles(self.conn, quality.candles, ingest_ts_ms=now_ms)
             quality_reason_codes = list(quality.reason_codes)
             newest = max((c.ts_open_ms for c in quality.candles), default=cp_last_ts)
@@ -149,9 +171,23 @@ class MarketDataScheduler:
                 self._save_checkpoint(key, now_ms=now_ms, state="resync_required", reason_code="CANDLE_GAP_DETECTED", trace_id=trace_id)
                 return self._snapshot(key, cp_last_ts=cp_last_ts, now_ms=now_ms, state="resync_required", reason_codes=["CANDLE_GAP_DETECTED"], trace_id=trace_id)
 
-            if cp_last_ts is not None and newest - cp_last_ts > tf_ms:
+            oldest = min((c.ts_open_ms for c in quality.candles), default=newest)
+            if cp_last_ts is not None and oldest != cp_last_ts + tf_ms:
                 self._save_checkpoint(key, now_ms=now_ms, state="resync_required", reason_code="CANDLE_GAP_DETECTED", trace_id=trace_id, last_ts_open_ms=cp_last_ts)
                 return self._snapshot(key, cp_last_ts=cp_last_ts, now_ms=now_ms, state="resync_required", reason_codes=["CANDLE_GAP_DETECTED"], trace_id=trace_id)
+
+            latest_close_ms = newest + tf_ms
+            if now_ms - latest_close_ms > (tf_ms * 3):
+                self._save_checkpoint(key, now_ms=now_ms, state="degraded", reason_code="CANDLE_STALE_WINDOW", trace_id=trace_id, last_ts_open_ms=newest, failure_count=0)
+                return self._snapshot(
+                    key,
+                    cp_last_ts=newest,
+                    now_ms=now_ms,
+                    state="degraded",
+                    reason_codes=[*quality_reason_codes, "CANDLE_STALE_WINDOW"],
+                    trace_id=trace_id,
+                    inserted=summary["inserted"],
+                )
 
             self.breaker.record_success(key.provider_id, key.venue, now_ms)
             self._save_checkpoint(key, now_ms=now_ms, state="ok", reason_code=None, trace_id=trace_id, last_ts_open_ms=newest, failure_count=0)
@@ -164,6 +200,15 @@ class MarketDataScheduler:
                 trace_id=trace_id,
                 inserted=summary["inserted"],
             )
+        except ProviderPolicyBlockedError:
+            self._save_checkpoint(key, now_ms=now_ms, state="blocked", reason_code="PROVIDER_POLICY_BLOCKED", trace_id=trace_id, last_ts_open_ms=(cp["last_ts_open_ms"] if cp else None))
+            return self._snapshot(key, cp_last_ts=(cp["last_ts_open_ms"] if cp else None), now_ms=now_ms, state="blocked", reason_codes=["PROVIDER_POLICY_BLOCKED"], trace_id=trace_id)
+        except ProviderCooldownError:
+            self._save_checkpoint(key, now_ms=now_ms, state="degraded", reason_code="PROVIDER_COOLDOWN", trace_id=trace_id, last_ts_open_ms=(cp["last_ts_open_ms"] if cp else None))
+            return self._snapshot(key, cp_last_ts=(cp["last_ts_open_ms"] if cp else None), now_ms=now_ms, state="degraded", reason_codes=["PROVIDER_COOLDOWN"], trace_id=trace_id)
+        except ProviderIpFrozenError:
+            self._save_checkpoint(key, now_ms=now_ms, state="frozen", reason_code="PROVIDER_IP_FROZEN", trace_id=trace_id, last_ts_open_ms=(cp["last_ts_open_ms"] if cp else None))
+            return self._snapshot(key, cp_last_ts=(cp["last_ts_open_ms"] if cp else None), now_ms=now_ms, state="frozen", reason_codes=["PROVIDER_IP_FROZEN"], trace_id=trace_id)
         except ProviderRateLimitError:
             self._on_failure(key, now_ms=now_ms, state="degraded", reason_code="PROVIDER_RATE_LIMITED", trace_id=trace_id)
             return self._snapshot(key, cp_last_ts=(cp["last_ts_open_ms"] if cp else None), now_ms=now_ms, state="degraded", reason_codes=["PROVIDER_RATE_LIMITED"], trace_id=trace_id)
@@ -200,20 +245,54 @@ class MarketDataScheduler:
             return self._snapshot(key, cp_last_ts=(cp["last_ts_open_ms"] if cp else None), now_ms=now_ms, state=state, reason_codes=[e.reason_code], trace_id=trace_id)
 
     def _fetch_ohlcv_with_retry(self, key: SchedulerKey, *, since_ms: int | None, limit: int, now_ms: int):
+        if self.provider_governor is not None:
+            self.provider_governor.check_request(
+                provider_id=key.venue,
+                venue=key.venue,
+                request_class=self.request_class,
+                now_ms=now_ms,
+            )
+
         if not self.rate_budget.consume(key.provider_id, key.venue, now_ms):
+            if self.provider_governor is not None:
+                self.provider_governor.record_http_status(provider_id=key.venue, venue=key.venue, status_code=429, now_ms=now_ms)
             raise ProviderRateLimitError("budget_exceeded")
 
         attempt = 0
         while True:
             try:
+                self._throttle_provider_request()
                 return self.provider.fetch_ohlcv(key.symbol, key.timeframe, since_ms, limit)
-            except (ProviderRateLimitError, ProviderUpstreamError) as e:
+            except (ProviderRateLimitError, ProviderTimeoutError, ProviderUnavailableError, ProviderUpstreamError) as e:
+                if self.provider_governor is not None:
+                    governor_reason = self.provider_governor.record_exception(provider_id=key.venue, venue=key.venue, error=e, now_ms=now_ms)
+                    if governor_reason == "PROVIDER_IP_FROZEN":
+                        raise ProviderIpFrozenError(str(e)) from e
                 attempt += 1
                 if attempt >= self.retry_attempts:
                     raise e
                 backoff = min(self.retry_max_delay_ms, self.retry_base_delay_ms * (2 ** (attempt - 1)))
                 jitter = int(backoff * self.rand() * 0.25)
                 self.sleep_fn((backoff + jitter) / 1000.0)
+
+    def _throttle_provider_request(self) -> None:
+        if self.request_spacing_ms <= 0:
+            return
+        now_monotonic_ms = time.monotonic() * 1000.0
+        elapsed_ms = now_monotonic_ms - self._last_request_monotonic_ms
+        wait_ms = self.request_spacing_ms - elapsed_ms
+        if self._last_request_monotonic_ms > 0 and wait_ms > 0:
+            self.sleep_fn(wait_ms / 1000.0)
+            now_monotonic_ms = time.monotonic() * 1000.0
+        self._last_request_monotonic_ms = now_monotonic_ms
+
+    def _closed_candles(self, key: SchedulerKey, candles, *, now_ms: int):
+        tf_ms = TIMEFRAME_MS[key.timeframe]
+        return [
+            candle
+            for candle in candles
+            if int(candle.ts_open_ms) + tf_ms + self.close_lag_ms <= now_ms
+        ]
 
     def _backfill(self, key: SchedulerKey, *, cp_last_ts: int | None, now_ms: int, trace_id: str) -> int | None:
         tf_ms = TIMEFRAME_MS[key.timeframe]
@@ -225,15 +304,18 @@ class MarketDataScheduler:
         while fetched < self.max_backfill_bars:
             batch_limit = min(self.backfill_page_limit, self.max_backfill_bars - fetched)
             candles = self._fetch_ohlcv_with_retry(key, since_ms=since_ms, limit=batch_limit, now_ms=now_ms)
+            candles = self._closed_candles(key, candles, now_ms=now_ms)
             if not candles:
                 break
             quality = enforce_candle_quality(candles, timeframe=key.timeframe, now_ms=now_ms, check_stale=False)
             upsert_market_candles(self.conn, quality.candles, ingest_ts_ms=now_ms)
             newest_batch = max(c.ts_open_ms for c in quality.candles)
             newest = max(newest or newest_batch, newest_batch)
-            since_ms = newest_batch
-            fetched += len(candles)
-            if len(candles) < batch_limit:
+            fetched += len(quality.candles)
+            if newest_batch < since_ms:
+                break
+            since_ms = newest_batch + tf_ms
+            if (newest_batch + tf_ms + self.close_lag_ms) > now_ms:
                 break
 
         state = "ok" if newest is not None else "resync_required"
@@ -330,8 +412,8 @@ class MarketDataScheduler:
             """
             INSERT INTO feed_health_events(
                 provider_id, venue, symbol, timeframe,
-                state, reason_codes_json, as_of_ms, trace_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                state, reason_codes_json, as_of_ms, trace_id, metadata_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
             (
                 key.provider_id,
@@ -342,6 +424,7 @@ class MarketDataScheduler:
                 json.dumps(reason_codes, sort_keys=True),
                 now_ms,
                 trace_id,
+                None,
             ),
         )
 
@@ -365,6 +448,8 @@ class MarketDataScheduler:
             "venue": key.venue,
             "symbol": key.symbol,
             "timeframe": key.timeframe,
+            "last_ts_open_ms": cp_last_ts,
+            "latest_close_ms": (cp_last_ts + tf_ms) if cp_last_ts is not None else None,
             "freshness_ms": freshness,
             "gap_bars": int(gap_bars),
             "state": state,

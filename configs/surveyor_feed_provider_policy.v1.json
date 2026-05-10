@@ -1,0 +1,41 @@
+{
+  "as_of_utc": "2026-05-05T23:20:00Z",
+  "contract": "surveyor_feed_provider_policy_v1",
+  "current_artifacts": {
+    "history_exception_policy": "artifacts/feed_bakeoff/feed-bakeoff-phase-b-reconnect-20260501-24h/okx_history_exception_policy_20260505.json",
+    "staged_admission_manifest": "artifacts/feed_bakeoff/feed-bakeoff-phase-b-reconnect-20260501-24h/okx_staged_admission_manifest_20260505.json"
+  },
+  "decision_source": "Discord thread #surveyor-feed-readiness-closure-checklist, 2026-05-05",
+  "next_readiness_slice": [
+    "Run the next small-cohort readiness slice on the 10 full-history OKX symbols from okx_staged_admission_manifest_20260505.",
+    "Keep conditional hot-only symbols out of full-history top-100-ready counts until daily/weekly history is resolved.",
+    "Wire provider routing so Bybit live WS does not imply Bybit REST repair/history.",
+    "Keep widening held until provider/IP guardrails and soak evidence pass."
+  ],
+  "provider_roles": {
+    "blofin": {
+      "live_websocket": "canary_only",
+      "reason": "Useful venue-context/canary evidence, but not the selected canonical top-100 feed path.",
+      "repair": "not_canonical",
+      "rest_history": "not_canonical"
+    },
+    "bybit": {
+      "live_websocket": "primary_conditional",
+      "reason": "Public REST returned HTTP 403 from CloudFront with a country-block message while WebSocket live candles passed the Phase B canary.",
+      "reconsider_if": "An explicitly approved alternate egress path is tested and passes REST instruments/history probes without provider/IP risk.",
+      "repair": "disabled_from_this_host",
+      "rest_history": "disabled_from_this_host"
+    },
+    "okx": {
+      "known_exceptions": [
+        "Top-50 conservative audit found only 16/50 symbols with all probed timeframes ok.",
+        "BNB/TON-style multi-year 1d/1w depth exceptions require explicit symbol/timeframe policy."
+      ],
+      "live_websocket": "shadow_fallback_conditional",
+      "reason": "OKX REST is reachable from this host and is the most practical split-source history/repair path after the Bybit REST blocker.",
+      "repair": "primary_conditional",
+      "rest_history": "primary_conditional"
+    }
+  },
+  "status": "accepted_for_next_readiness_slice"
+}

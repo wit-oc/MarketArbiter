@@ -9,6 +9,12 @@ import ccxt
 
 from market_arbiter.core.db import init_db
 from market_arbiter.core.market_data import CandleDTO, ProviderHealth, upsert_market_candles
+from market_arbiter.core.market_scheduler import (
+    ProviderRateLimitError,
+    ProviderTimeoutError,
+    ProviderUnavailableError,
+    ProviderUpstreamError,
+)
 
 
 _TIMEFRAME_SECONDS = {"5m": 5 * 60, "4h": 4 * 60 * 60, "1d": 24 * 60 * 60, "1w": 7 * 24 * 60 * 60}
@@ -41,12 +47,24 @@ class OkxCcxtProvider:
 
     def fetch_ohlcv(self, symbol: str, timeframe: str, since_ms: int | None, limit: int) -> list[CandleDTO]:
         market_symbol = _market_symbol(symbol)
-        rows = self.exchange.fetch_ohlcv(
-            market_symbol,
-            timeframe=timeframe,
-            since=since_ms,
-            limit=min(int(limit), _OKX_LIMIT),
-        )
+        try:
+            rows = self.exchange.fetch_ohlcv(
+                market_symbol,
+                timeframe=timeframe,
+                since=since_ms,
+                limit=min(int(limit), _OKX_LIMIT),
+            )
+        except ccxt.RateLimitExceeded as exc:
+            raise ProviderRateLimitError(str(exc)) from exc
+        except ccxt.RequestTimeout as exc:
+            raise ProviderTimeoutError(str(exc)) from exc
+        except ccxt.ExchangeNotAvailable as exc:
+            raise ProviderUnavailableError(str(exc)) from exc
+        except ccxt.NetworkError as exc:
+            raise ProviderUpstreamError(str(exc)) from exc
+        except ccxt.ExchangeError as exc:
+            raise ProviderUpstreamError(str(exc)) from exc
+
         dataset_version = f"okx_ccxt_{timeframe}_v1"
         trace_id = _trace_id(symbol, timeframe)
         return [
@@ -132,10 +150,10 @@ def _save_checkpoint(conn, *, symbol: str, timeframe: str, last_ts_open_ms: int 
     )
     conn.execute(
         """
-        INSERT INTO feed_health_events(provider_id, venue, symbol, timeframe, state, reason_codes_json, as_of_ms, trace_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        INSERT INTO feed_health_events(provider_id, venue, symbol, timeframe, state, reason_codes_json, as_of_ms, trace_id, metadata_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
         """,
-        ("ccxt", "okx", _market_symbol(symbol), timeframe, state, json.dumps([] if reason_code is None else [reason_code]), now_ms, trace_id),
+        ("ccxt", "okx", _market_symbol(symbol), timeframe, state, json.dumps([] if reason_code is None else [reason_code]), now_ms, trace_id, None),
     )
 
 

@@ -1,0 +1,100 @@
+{
+  "backfill_page_limit": 1000,
+  "close_lag_ms": 2500,
+  "contract": "surveyor_feed_workset_manifest_v1",
+  "db_path": "data/market_arbiter.sqlite",
+  "loop_sleep_ms": 65000,
+  "max_backfill_bars": 2000,
+  "onboarding_manifest_path": "configs/surveyor_10_symbol_prod_soak_20260506.manifest.json",
+  "onboarding_stage": "small_cohort_soak",
+  "provider_policy_path": "configs/surveyor_feed_provider_policy.v1.json",
+  "request_spacing_ms": 300,
+  "shards": {
+    "ws-a": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "OKBUSDT",
+      "SOLUSDT",
+      "DOGEUSDT"
+    ],
+    "ws-b": [
+      "XRPUSDT",
+      "BCHUSDT",
+      "1INCHUSDT",
+      "AAVEUSDT",
+      "ADAUSDT"
+    ]
+  },
+  "source_routes": {
+    "gap_repair": {
+      "dataset_prefix": "okx_gap_repair",
+      "provider_id": "okx",
+      "request_class": "gap_repair",
+      "role": "gap_repair",
+      "transport": "rest",
+      "venue": "okx",
+      "write_enabled": true,
+      "write_provider_id": "okx_rest_repair"
+    },
+    "live_ws_primary": {
+      "dataset_prefix": "bybit_live_ws",
+      "provider_id": "bybit",
+      "request_class": "live_ws",
+      "role": "live_ws_primary",
+      "transport": "websocket",
+      "venue": "bybit",
+      "write_enabled": true,
+      "write_provider_id": "bybit_ws"
+    },
+    "live_ws_shadow_fallback": {
+      "dataset_prefix": "okx_shadow_ws",
+      "provider_id": "okx",
+      "request_class": "live_ws",
+      "role": "live_ws_shadow_fallback",
+      "transport": "websocket",
+      "venue": "okx",
+      "write_enabled": true,
+      "write_provider_id": "okx_ws"
+    },
+    "rest_history": {
+      "dataset_prefix": "okx_rest_history",
+      "provider_id": "okx",
+      "request_class": "rest_history",
+      "role": "rest_history",
+      "transport": "rest",
+      "venue": "okx",
+      "write_enabled": true,
+      "write_provider_id": "okx_rest"
+    }
+  },
+  "source_symbols": [
+    "BTC-USDT",
+    "ETH-USDT",
+    "OKB-USDT",
+    "SOL-USDT",
+    "DOGE-USDT",
+    "XRP-USDT",
+    "BCH-USDT",
+    "1INCH-USDT",
+    "AAVE-USDT",
+    "ADA-USDT"
+  ],
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "OKBUSDT",
+    "SOLUSDT",
+    "DOGEUSDT",
+    "XRPUSDT",
+    "BCHUSDT",
+    "1INCHUSDT",
+    "AAVEUSDT",
+    "ADAUSDT"
+  ],
+  "timeframes": [
+    "5m",
+    "4h",
+    "1d",
+    "1w"
+  ]
+}

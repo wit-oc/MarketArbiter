@@ -1,0 +1,102 @@
+{
+  "contract": "feed_provider_bakeoff_config_v1",
+  "status": "proposed_not_run",
+  "intent": "Compare public market-data providers before selecting the canonical top-100 Surveyor feed.",
+  "run_profile": {
+    "base_timeframe": "5m",
+    "phase_a_smoke_duration_minutes": 120,
+    "phase_b_live_duration_hours": 24,
+    "phase_c_history_depth": "bounded_conservative_provider_pagination",
+    "canonical_db_writes_enabled": false,
+    "artifact_root": "artifacts/feed_bakeoff"
+  },
+  "candidate_symbols": {
+    "phase_a_smoke": [
+      "BTC-USDT",
+      "ETH-USDT",
+      "SOL-USDT"
+    ],
+    "phase_b_live": [
+      "BTC-USDT",
+      "ETH-USDT",
+      "SOL-USDT",
+      "XRP-USDT",
+      "DOGE-USDT",
+      "BNB-USDT",
+      "ADA-USDT",
+      "LINK-USDT",
+      "AVAX-USDT",
+      "TON-USDT"
+    ]
+  },
+  "providers": [
+    {
+      "id": "blofin",
+      "role": "incumbent_canary_candidate",
+      "enabled_by_default": true,
+      "public_ws_required": true,
+      "rest_history_required": true,
+      "notes": "Existing implementation evidence; not presumed canonical until bakeoff passes."
+    },
+    {
+      "id": "bybit",
+      "role": "canonical_feed_candidate",
+      "enabled_by_default": true,
+      "public_ws_required": true,
+      "rest_history_required": true,
+      "notes": "Adapter discovery required before smoke."
+    },
+    {
+      "id": "okx",
+      "role": "canonical_or_history_seed_candidate",
+      "enabled_by_default": true,
+      "public_ws_required": true,
+      "rest_history_required": true,
+      "notes": "Existing extraction-era path; evaluate live and history separately."
+    },
+    {
+      "id": "binance",
+      "role": "canonical_feed_comparator_if_access_allowed",
+      "enabled_by_default": false,
+      "public_ws_required": true,
+      "rest_history_required": true,
+      "notes": "Enable only after access/regional/policy constraints are acceptable."
+    },
+    {
+      "id": "paid_normalized_candidate",
+      "role": "fallback_comparator_if_free_feeds_fail",
+      "enabled_by_default": false,
+      "public_ws_required": false,
+      "rest_history_required": true,
+      "notes": "Do not enter V1 unless free/public candidates fail hard gates."
+    }
+  ],
+  "hard_gates": {
+    "deterministic_closed_candles": true,
+    "top100_coverage_sufficient": true,
+    "no_provider_ip_safety_incident_under_phase_b": true,
+    "stable_candle_identity": true,
+    "safe_rest_repair_or_history_path": true
+  },
+  "scoring_weights": {
+    "live_close_reliability": 0.3,
+    "top100_coverage_and_symbol_semantics": 0.2,
+    "rest_repair_and_historical_bootstrap": 0.15,
+    "provider_ip_safety": 0.15,
+    "operational_complexity": 0.1,
+    "latency_and_ordering": 0.1
+  },
+  "phase_b_acceptance_thresholds": {
+    "min_observed_or_repaired_close_rate": 0.995,
+    "max_unrecovered_symbol_outage_close_intervals": 1,
+    "allow_provider_ip_safety_incidents": false,
+    "allow_conflicting_canonical_bars": false
+  },
+  "output_contracts": {
+    "close_event": "feed_bakeoff_close_event_v1",
+    "phase_a": "phase_a_smoke.json",
+    "phase_b": "phase_b_live_summary.json",
+    "phase_c": "phase_c_history_depth.json",
+    "decision": "feed_provider_bakeoff_decision_v1"
+  }
+}
