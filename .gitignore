@@ -1,0 +1,23 @@
+# Python/cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local OS/editor noise
+.DS_Store
+*.swp
+*.swo
+
+# Runtime/generated MarketArbiter state
+artifacts/
+data/
+logs/
+
+# Local env/secrets
+.env
+.env.*
+!.env.example
