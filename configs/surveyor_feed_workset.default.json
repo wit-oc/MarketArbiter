@@ -1,0 +1,10 @@
+{
+  "contract": "surveyor_feed_workset_manifest_v1",
+  "db_path": "data/market_arbiter.sqlite",
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "timeframes": ["5m", "4h", "1d", "1w"],
+  "loop_sleep_ms": 15000,
+  "close_lag_ms": 2500,
+  "backfill_page_limit": 1000,
+  "max_backfill_bars": 2000
+}

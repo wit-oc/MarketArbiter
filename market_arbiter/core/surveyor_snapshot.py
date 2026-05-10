@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+import json
 import sqlite3
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+
+from market_arbiter.ops.surveyor_feed_runner import FeedRunnerConfig, collect_status
 
 
 from market_arbiter.surveyor.dynamic_levels import build_dynamic_level_packet
@@ -37,6 +40,8 @@ SURVEYOR_PRIMARY_VENUE = "okx"
 _STORE_TF = {"1W": "1w", "1D": "1d", "4H": "4h", "5m": "5m"}
 _TF_SECONDS = {"1W": 7 * 24 * 60 * 60, "1D": 24 * 60 * 60, "4H": 4 * 60 * 60, "5m": 5 * 60}
 _REPLAY_LIMITS = {"1D": 800, "4H": 1200}
+_RUNNER_TIMEFRAMES = ["5m", "4h", "1d", "1w"]
+_BUNDLE_CONTRACT = "surveyor_unified_dataset_bundle_v1"
 
 
 @dataclass(frozen=True)
@@ -79,6 +84,16 @@ def _feed_provider_label(provider_id: str | None, venue: str | None) -> str:
     return venue_text.upper() or provider_text.upper() or SURVEYOR_PRIMARY_PROVIDER
 
 
+def _json_object(value: Any) -> dict[str, Any] | None:
+    if not value:
+        return None
+    try:
+        payload = json.loads(value)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+    return dict(payload) if isinstance(payload, Mapping) else None
+
+
 def _load_feed_checkpoint(conn: sqlite3.Connection, symbol: str, timeframe: str) -> dict[str, Any] | None:
     aliases = _symbol_aliases(symbol)
     placeholders = ",".join("?" for _ in aliases)
@@ -107,6 +122,38 @@ def _load_feed_checkpoint(conn: sqlite3.Connection, symbol: str, timeframe: str)
         "state": row[8],
         "last_reason_code": row[9],
         "trace_id": row[10],
+    }
+
+
+def _load_latest_feed_health_event(conn: sqlite3.Connection, symbol: str, timeframe: str) -> dict[str, Any] | None:
+    aliases = _symbol_aliases(symbol)
+    placeholders = ",".join("?" for _ in aliases)
+    row = conn.execute(
+        f"""
+        SELECT provider_id, venue, symbol, timeframe, state, reason_codes_json, as_of_ms, trace_id, metadata_json
+        FROM feed_health_events
+        WHERE timeframe = ? AND symbol IN ({placeholders})
+        ORDER BY
+            CASE WHEN venue = ? THEN 0 ELSE 1 END,
+            CASE WHEN metadata_json IS NOT NULL AND metadata_json != '' THEN 0 ELSE 1 END,
+            as_of_ms DESC,
+            id DESC
+        LIMIT 1;
+        """,
+        (timeframe, *aliases, SURVEYOR_PRIMARY_VENUE),
+    ).fetchone()
+    if not row:
+        return None
+    return {
+        "provider_id": row[0],
+        "venue": row[1],
+        "symbol": row[2],
+        "timeframe": row[3],
+        "state": row[4],
+        "reason_codes": json.loads(row[5]) if row[5] else [],
+        "as_of_ms": row[6],
+        "trace_id": row[7],
+        "metadata": _json_object(row[8]),
     }
 
 
@@ -163,7 +210,7 @@ def _freshness_state(*, timeframe: str, checkpoint: Mapping[str, Any] | None, la
         return "partial", "missing_timeframe_input"
 
     cp_state = str((checkpoint or {}).get("state") or "").strip().lower()
-    if cp_state in {"degraded", "tripped", "resync_required"}:
+    if cp_state in {"blocked", "degraded", "tripped", "resync_required"}:
         return "stale", str((checkpoint or {}).get("last_reason_code") or cp_state)
 
     threshold_ms = _TF_SECONDS[timeframe] * 1000 * 3
@@ -186,7 +233,10 @@ def load_surveyor_timeframe_inputs(
         store_tf = _STORE_TF[tf]
         limit = 2500 if tf == "5m" else (400 if tf == "1W" else 800)
         checkpoint = _load_feed_checkpoint(conn, symbol, store_tf)
+        health_event = _load_latest_feed_health_event(conn, symbol, store_tf)
         candles, meta = _load_market_candles(conn, symbol, store_tf, limit=limit)
+        health_metadata = dict((health_event or {}).get("metadata") or {})
+        repair_summary = dict(health_metadata.get("repair_summary") or {}) if isinstance(health_metadata.get("repair_summary"), Mapping) else None
         if candles and meta:
             freshness_state, freshness_reason = _freshness_state(
                 timeframe=tf,
@@ -210,6 +260,12 @@ def load_surveyor_timeframe_inputs(
                 "history_start_time": int(meta["history_start_ms"] // 1000),
                 "history_end_time": int(meta["history_end_ms"] // 1000),
                 "feed_status": checkpoint,
+                "feed_health_event": health_event,
+                "quality_band": health_metadata.get("quality_band"),
+                "circuit_breaker_action": health_metadata.get("circuit_breaker_action"),
+                "repair_policy_contract": health_metadata.get("repair_policy_contract"),
+                "repair_provenance": dict(health_metadata.get("repair_provenance") or {}) if isinstance(health_metadata.get("repair_provenance"), Mapping) else None,
+                "repair_summary": repair_summary,
                 "source_kind": "market_candles",
             }
             continue
@@ -236,8 +292,14 @@ def load_surveyor_timeframe_inputs(
             "dataset_mode": "live",
             "dataset_id": f"missing:{symbol}:{tf}",
             "freshness_state": "partial",
-            "freshness_reason": "no_store_or_replay_source",
+            "freshness_reason": str((checkpoint or {}).get("last_reason_code") or (checkpoint or {}).get("state") or "no_store_or_replay_source"),
             "feed_status": checkpoint,
+            "feed_health_event": health_event,
+            "quality_band": health_metadata.get("quality_band"),
+            "circuit_breaker_action": health_metadata.get("circuit_breaker_action"),
+            "repair_policy_contract": health_metadata.get("repair_policy_contract"),
+            "repair_provenance": dict(health_metadata.get("repair_provenance") or {}) if isinstance(health_metadata.get("repair_provenance"), Mapping) else None,
+            "repair_summary": repair_summary,
             "source_kind": "missing",
         }
 
@@ -439,6 +501,470 @@ def _build_fib_and_dynamic_sections(
     return fib_section, dynamic_section
 
 
+def _connection_db_path(conn: sqlite3.Connection) -> str | None:
+    row = conn.execute("PRAGMA database_list;").fetchone()
+    if not row:
+        return None
+    path = row[2]
+    return str(path) if path else None
+
+
+def _runner_status_for_symbol(conn: sqlite3.Connection, *, symbol: str) -> dict[str, Any] | None:
+    db_path = _connection_db_path(conn)
+    if not db_path:
+        return None
+    return collect_status(
+        FeedRunnerConfig(
+            db_path=db_path,
+            symbols=[symbol],
+            timeframes=list(_RUNNER_TIMEFRAMES),
+        )
+    )
+
+
+def _dataset_status(*, missing: bool = False, stale: bool = False, unavailable: bool = False, degraded: bool = False, replay_only: bool = False) -> str:
+    if degraded:
+        return "degraded"
+    if stale:
+        return "stale"
+    if unavailable:
+        return "unavailable"
+    if missing:
+        return "partial"
+    if replay_only:
+        return "replay_only"
+    return "complete"
+
+
+def _build_feed_dataset(market_data: Mapping[str, Any], runner_status: Mapping[str, Any] | None) -> dict[str, Any]:
+    timeframes = market_data.get("timeframes") if isinstance(market_data.get("timeframes"), Mapping) else {}
+    available = [tf for tf in REQUIRED_SURVEYOR_TIMEFRAMES if int((timeframes.get(tf) or {}).get("bar_count_available") or 0) > 0]
+    missing = [tf for tf in REQUIRED_SURVEYOR_TIMEFRAMES if tf not in available]
+    freshness_summary = {"fresh": [], "stale": [], "partial": [], "replay_only": []}
+    quality_band_summary = {"clean": [], "benign": [], "elevated": [], "degraded": [], "blocked": [], "unknown": []}
+    repair_totals = {
+        "fetched_candles": 0,
+        "accepted_candles": 0,
+        "repaired_candles": 0,
+        "unrepairable_candles": 0,
+    }
+    issue_reasons: list[dict[str, Any]] = []
+    for tf in REQUIRED_SURVEYOR_TIMEFRAMES:
+        payload = timeframes.get(tf) or {}
+        freshness = str(payload.get("freshness_state") or "partial")
+        freshness_summary.setdefault(freshness, []).append(tf)
+        quality_band = str(payload.get("quality_band") or "unknown")
+        quality_band_summary.setdefault(quality_band, []).append(tf)
+        repair_summary = payload.get("repair_summary") if isinstance(payload.get("repair_summary"), Mapping) else {}
+        for key in repair_totals:
+            repair_totals[key] += int(repair_summary.get(key) or 0)
+        if freshness in {"stale", "partial"}:
+            issue_reasons.append(
+                {
+                    "family": "feed_state",
+                    "timeframe": tf,
+                    "issue_kind": "upstream_feed_input",
+                    "reason": payload.get("freshness_reason"),
+                    "dataset_id": payload.get("dataset_id"),
+                }
+            )
+        if quality_band in {"elevated", "degraded", "blocked"}:
+            issue_reasons.append(
+                {
+                    "family": "feed_state",
+                    "timeframe": tf,
+                    "issue_kind": "historical_repair_quality",
+                    "reason": quality_band,
+                    "repair_rate": repair_summary.get("repair_rate"),
+                    "repaired_candles": repair_summary.get("repaired_candles"),
+                    "unrepairable_candles": repair_summary.get("unrepairable_candles"),
+                    "circuit_breaker_action": payload.get("circuit_breaker_action"),
+                }
+            )
+
+    status = _dataset_status(
+        missing=bool(missing),
+        stale=bool(freshness_summary.get("stale")),
+        degraded=bool(quality_band_summary.get("degraded") or quality_band_summary.get("blocked")),
+        unavailable=len(available) == 0,
+        replay_only=len(available) > 0 and len(available) == len(freshness_summary.get("replay_only", [])),
+    )
+    return {
+        "family": "feed_state",
+        "contract_version": market_data.get("contract") or "surveyor_feed_state_dataset_v1",
+        "status": status,
+        "summary": {
+            "available_timeframes": available,
+            "missing_timeframes": missing,
+            "freshness_summary": freshness_summary,
+            "quality_band_summary": quality_band_summary,
+            "repair_totals": repair_totals,
+            "continuity_state": (runner_status or {}).get("continuity_state", "unknown"),
+            "issue_count": len(issue_reasons),
+        },
+        "timeframes": dict(timeframes),
+        "provenance": {
+            "feed_provider": market_data.get("provider") or SURVEYOR_PRIMARY_PROVIDER,
+            "dataset_mode": market_data.get("dataset_mode"),
+            "dataset_id": market_data.get("dataset_id"),
+            "runner_state_path": (runner_status or {}).get("state_path"),
+        },
+        "payload": dict(market_data),
+        "issues": issue_reasons,
+    }
+
+
+def _build_structure_dataset(structure: Mapping[str, Any], feed_dataset: Mapping[str, Any]) -> dict[str, Any]:
+    surfaces = structure.get("timeframes") if isinstance(structure.get("timeframes"), Mapping) else {}
+    feed_timeframes = ((feed_dataset.get("payload") or {}).get("timeframes") if isinstance(feed_dataset.get("payload"), Mapping) else {}) or {}
+    issues: list[dict[str, Any]] = []
+    suspected_code_defect_timeframes: list[str] = []
+    missing_input_timeframes: list[str] = []
+    ok_timeframes: list[str] = []
+
+    for tf in REQUIRED_SURVEYOR_TIMEFRAMES:
+        surface = surfaces.get(tf) or {}
+        feed_tf = feed_timeframes.get(tf) or {}
+        feed_bars = int(feed_tf.get("bar_count_available") or 0)
+        surface_status = str(surface.get("status") or "missing")
+        if surface_status == "ok":
+            ok_timeframes.append(tf)
+            continue
+        if feed_bars > 0:
+            suspected_code_defect_timeframes.append(tf)
+            issues.append(
+                {
+                    "family": "structure_state",
+                    "timeframe": tf,
+                    "issue_kind": "suspected_code_defect",
+                    "reason": "structure_missing_despite_feed_input",
+                    "feed_bar_count": feed_bars,
+                    "feed_freshness_state": feed_tf.get("freshness_state"),
+                    "surface_status": surface_status,
+                }
+            )
+        else:
+            missing_input_timeframes.append(tf)
+            issues.append(
+                {
+                    "family": "structure_state",
+                    "timeframe": tf,
+                    "issue_kind": "upstream_missing_input",
+                    "reason": (feed_tf.get("freshness_reason") or "missing_feed_input"),
+                    "surface_status": surface_status,
+                }
+            )
+
+    status = _dataset_status(
+        missing=bool(missing_input_timeframes),
+        degraded=bool(suspected_code_defect_timeframes),
+        unavailable=len(ok_timeframes) == 0 and not suspected_code_defect_timeframes,
+    )
+    return {
+        "family": "structure_state",
+        "contract_version": structure.get("contract") or "surveyor_structure_state_dataset_v1",
+        "status": status,
+        "summary": {
+            "ok_timeframes": ok_timeframes,
+            "missing_input_timeframes": missing_input_timeframes,
+            "suspected_code_defect_timeframes": suspected_code_defect_timeframes,
+            "issue_count": len(issues),
+        },
+        "timeframes": dict(surfaces),
+        "provenance": {
+            "upstream_family": "feed_state",
+        },
+        "payload": dict(structure),
+        "issues": issues,
+    }
+
+
+def _build_sr_dataset(sr: Mapping[str, Any]) -> dict[str, Any]:
+    surfaces = sr.get("selected_surfaces") if isinstance(sr.get("selected_surfaces"), Mapping) else {}
+    levels_by_tf = sr.get("levels_by_timeframe") if isinstance(sr.get("levels_by_timeframe"), Mapping) else {}
+    available_timeframes = [tf for tf, rows in levels_by_tf.items() if isinstance(rows, list) and rows]
+    lifecycle_summary = _summarize_sr_lifecycle(levels_by_tf)
+    status = _dataset_status(unavailable=len(available_timeframes) == 0)
+    issues = []
+    if not available_timeframes:
+        issues.append(
+            {
+                "family": "sr_zones",
+                "issue_kind": "unavailable_family_input",
+                "reason": "authoritative_view_not_provided",
+            }
+        )
+    return {
+        "family": "sr_zones",
+        "contract_version": sr.get("source_contract_version") or "surveyor_sr_dataset_v1",
+        "status": status,
+        "summary": {
+            "available_timeframes": sorted(available_timeframes),
+            "selector_surfaces": dict(sr.get("source_selector_surface") or {}),
+            "metadata_zone_count": lifecycle_summary["metadata_zone_count"],
+            "lifecycle_status_counts": lifecycle_summary["lifecycle_status_counts"],
+            "confidence_tier_counts": lifecycle_summary["confidence_tier_counts"],
+            "decision_eligibility_counts": lifecycle_summary["decision_eligibility_counts"],
+            "hard_invalid_or_blocked_zone_count": lifecycle_summary["hard_invalid_or_blocked_zone_count"],
+            "rejected_zone_count": lifecycle_summary["rejected_zone_count"],
+            "issue_count": len(issues),
+        },
+        "timeframes": dict(surfaces),
+        "provenance": {
+            "source_contract_version": sr.get("source_contract_version"),
+        },
+        "payload": dict(sr),
+        "issues": issues,
+    }
+
+
+def _summarize_sr_lifecycle(levels_by_tf: Mapping[str, Any]) -> dict[str, Any]:
+    status_counts: dict[str, int] = {}
+    tier_counts: dict[str, int] = {}
+    eligibility_counts: dict[str, int] = {}
+    metadata_zone_count = 0
+    hard_statuses = {"invalidated", "flipped_pending", "expired", "blocked", "superseded"}
+    hard_count = 0
+    rejected_count = 0
+
+    for rows in levels_by_tf.values():
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, Mapping):
+                continue
+            lifecycle = row.get("lifecycle") if isinstance(row.get("lifecycle"), Mapping) else {}
+            quality = row.get("quality") if isinstance(row.get("quality"), Mapping) else {}
+            visual = row.get("visual") if isinstance(row.get("visual"), Mapping) else {}
+            if not lifecycle and not quality and not visual:
+                continue
+            metadata_zone_count += 1
+            status = str(lifecycle.get("status") or "unknown")
+            tier = str(quality.get("confidence_tier") or "unknown")
+            eligibility = str(quality.get("decision_eligibility") or "unknown")
+            status_counts[status] = status_counts.get(status, 0) + 1
+            tier_counts[tier] = tier_counts.get(tier, 0) + 1
+            eligibility_counts[eligibility] = eligibility_counts.get(eligibility, 0) + 1
+            if status in hard_statuses:
+                hard_count += 1
+            if eligibility == "reject":
+                rejected_count += 1
+
+    return {
+        "metadata_zone_count": metadata_zone_count,
+        "lifecycle_status_counts": status_counts,
+        "confidence_tier_counts": tier_counts,
+        "decision_eligibility_counts": eligibility_counts,
+        "hard_invalid_or_blocked_zone_count": hard_count,
+        "rejected_zone_count": rejected_count,
+    }
+
+
+def _build_fib_dataset(fib: Mapping[str, Any], feed_dataset: Mapping[str, Any]) -> dict[str, Any]:
+    contexts = fib.get("contexts_by_timeframe") if isinstance(fib.get("contexts_by_timeframe"), Mapping) else {}
+    feed_timeframes = ((feed_dataset.get("payload") or {}).get("timeframes") if isinstance(feed_dataset.get("payload"), Mapping) else {}) or {}
+    feed_5m = feed_timeframes.get("5m") or {}
+    issues: list[dict[str, Any]] = []
+
+    if int(feed_5m.get("bar_count_available") or 0) == 0:
+        status = "unavailable"
+        issues.append(
+            {
+                "family": "fib_context",
+                "timeframe": "5m",
+                "issue_kind": "upstream_missing_input",
+                "reason": feed_5m.get("freshness_reason") or "missing_5m_input",
+            }
+        )
+    elif not contexts:
+        status = "degraded"
+        issues.append(
+            {
+                "family": "fib_context",
+                "timeframe": "5m",
+                "issue_kind": "suspected_code_defect",
+                "reason": "fib_missing_despite_5m_feed_input",
+            }
+        )
+    else:
+        status = "complete"
+
+    return {
+        "family": "fib_context",
+        "contract_version": fib.get("source_contract_version") or "surveyor_fib_context_dataset_v1",
+        "status": status,
+        "summary": {
+            "available_timeframes": sorted(contexts.keys()),
+            "active_timeframes": list((fib.get("summary") or {}).get("active_timeframes") or []),
+            "issue_count": len(issues),
+        },
+        "timeframes": dict(contexts),
+        "provenance": {
+            "source_event_id": fib.get("source_event_id"),
+            "source_swing_id": fib.get("source_swing_id"),
+            "source_contract_version": fib.get("source_contract_version"),
+        },
+        "payload": dict(fib),
+        "issues": issues,
+    }
+
+
+def _build_dynamic_levels_dataset(dynamic: Mapping[str, Any], feed_dataset: Mapping[str, Any]) -> dict[str, Any]:
+    levels = dynamic.get("levels") if isinstance(dynamic.get("levels"), list) else []
+    feed_timeframes = ((feed_dataset.get("payload") or {}).get("timeframes") if isinstance(feed_dataset.get("payload"), Mapping) else {}) or {}
+    feed_5m = feed_timeframes.get("5m") or {}
+    issues: list[dict[str, Any]] = []
+    if int(feed_5m.get("bar_count_available") or 0) == 0:
+        status = "unavailable"
+        issues.append(
+            {
+                "family": "dynamic_levels",
+                "timeframe": "5m",
+                "issue_kind": "upstream_missing_input",
+                "reason": feed_5m.get("freshness_reason") or "missing_5m_input",
+            }
+        )
+    elif not levels:
+        status = "degraded"
+        issues.append(
+            {
+                "family": "dynamic_levels",
+                "timeframe": "5m",
+                "issue_kind": "suspected_code_defect",
+                "reason": "dynamic_levels_missing_despite_5m_feed_input",
+            }
+        )
+    else:
+        status = "complete"
+
+    return {
+        "family": "dynamic_levels",
+        "contract_version": dynamic.get("source_contract_version") or dynamic.get("contract") or "surveyor_dynamic_levels_dataset_v1",
+        "status": status,
+        "summary": {
+            "level_count": len(levels),
+            "issue_count": len(issues),
+        },
+        "timeframes": {
+            str(level.get("timeframe") or "unknown"): level
+            for level in levels
+            if isinstance(level, Mapping)
+        },
+        "provenance": {
+            "source_event_id": dynamic.get("source_event_id"),
+            "source_swing_id": dynamic.get("source_swing_id"),
+            "source_contract_version": dynamic.get("source_contract_version"),
+        },
+        "payload": dict(dynamic),
+        "issues": issues,
+    }
+
+
+def _build_interaction_lifecycle_dataset(lifecycle: Mapping[str, Any], structure_dataset: Mapping[str, Any]) -> dict[str, Any]:
+    state_changes = lifecycle.get("state_changes") if isinstance(lifecycle.get("state_changes"), list) else []
+    level_interactions = lifecycle.get("level_interactions") if isinstance(lifecycle.get("level_interactions"), list) else []
+    zone_interactions = lifecycle.get("zone_interactions") if isinstance(lifecycle.get("zone_interactions"), list) else []
+    structure_status = str(structure_dataset.get("status") or "partial")
+    issues: list[dict[str, Any]] = []
+    if structure_status == "degraded":
+        status = "degraded"
+        issues.append(
+            {
+                "family": "interaction_lifecycle",
+                "issue_kind": "downstream_of_structure_failure",
+                "reason": "structure_state_degraded",
+            }
+        )
+    elif structure_status in {"partial", "unavailable", "stale"}:
+        status = "partial"
+    else:
+        status = "complete"
+    return {
+        "family": "interaction_lifecycle",
+        "contract_version": lifecycle.get("contract") or "surveyor_interaction_lifecycle_dataset_v1",
+        "status": status,
+        "summary": {
+            "state_change_count": len(state_changes),
+            "level_interaction_count": len(level_interactions),
+            "zone_interaction_count": len(zone_interactions),
+            "issue_count": len(issues),
+        },
+        "timeframes": {},
+        "provenance": {
+            "upstream_family": "structure_state",
+        },
+        "payload": dict(lifecycle),
+        "issues": issues,
+    }
+
+
+def _bundle_coverage(feed_dataset: Mapping[str, Any]) -> dict[str, Any]:
+    summary = dict((feed_dataset.get("summary") or {}).get("freshness_summary") or {})
+    for key in ("fresh", "stale", "partial", "replay_only"):
+        summary.setdefault(key, [])
+    return {
+        "required_timeframes": list(REQUIRED_SURVEYOR_TIMEFRAMES),
+        "available_timeframes": list((feed_dataset.get("summary") or {}).get("available_timeframes") or []),
+        "missing_timeframes": list((feed_dataset.get("summary") or {}).get("missing_timeframes") or []),
+        "freshness_summary": summary,
+    }
+
+
+def _bundle_status(datasets: Mapping[str, Mapping[str, Any]]) -> str:
+    statuses = [str((payload or {}).get("status") or "partial") for payload in datasets.values()]
+    if any(status in {"degraded", "stale"} for status in statuses):
+        return "degraded"
+    if any(status in {"partial", "unavailable", "replay_only"} for status in statuses):
+        return "partial"
+    return "complete"
+
+
+def build_surveyor_dataset_bundle(
+    *,
+    packet: Mapping[str, Any],
+    runner_status: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    meta = packet.get("meta") if isinstance(packet.get("meta"), Mapping) else {}
+    feed_dataset = _build_feed_dataset(packet.get("market_data") or {}, runner_status)
+    structure_dataset = _build_structure_dataset(packet.get("structure") or {}, feed_dataset)
+    datasets = {
+        "feed_state": feed_dataset,
+        "structure_state": structure_dataset,
+        "sr_zones": _build_sr_dataset(packet.get("sr") or {}),
+        "fib_context": _build_fib_dataset(packet.get("fib") or {}, feed_dataset),
+        "dynamic_levels": _build_dynamic_levels_dataset(packet.get("dynamic_levels") or {}, feed_dataset),
+        "interaction_lifecycle": _build_interaction_lifecycle_dataset(packet.get("interaction_lifecycle") or {}, structure_dataset),
+    }
+    issues = []
+    for payload in datasets.values():
+        issues.extend(list(payload.get("issues") or []))
+    return {
+        "meta": {
+            "bundle_contract": _BUNDLE_CONTRACT,
+            "bundle_id": f"surveyor_bundle:{meta.get('symbol') or 'unknown'}:{meta.get('packet_id') or 'na'}",
+            "symbol": meta.get("symbol"),
+            "as_of_ts": meta.get("as_of_ts"),
+            "build_mode": meta.get("build_mode"),
+            "bundle_status": _bundle_status(datasets),
+            "primary_feed_provider": ((packet.get("market_data") or {}).get("provider") or SURVEYOR_PRIMARY_PROVIDER),
+            "continuity_state": (runner_status or {}).get("continuity_state", "unknown"),
+            "intended_direction_context": meta.get("intended_direction_context"),
+            "legacy_packet_status": meta.get("packet_status"),
+        },
+        "coverage": _bundle_coverage(feed_dataset),
+        "datasets": datasets,
+        "delivery_profiles": {
+            "ui_full": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels", "interaction_lifecycle"],
+            "arbiter_core": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels"],
+            "backtest_core": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels", "interaction_lifecycle"],
+        },
+        "diagnostics": {
+            "issue_count": len(issues),
+            "issues": issues,
+        },
+    }
+
+
 def build_surveyor_packet_snapshot(
     conn: sqlite3.Connection,
     *,
@@ -447,6 +973,7 @@ def build_surveyor_packet_snapshot(
     ladders: Mapping[str, Any] | None = None,
     allow_replay_fallback: bool = True,
 ) -> dict[str, Any]:
+    runner_status = _runner_status_for_symbol(conn, symbol=symbol)
     timeframe_inputs = load_surveyor_timeframe_inputs(
         conn,
         symbol=symbol,
@@ -459,6 +986,17 @@ def build_surveyor_packet_snapshot(
         dataset_id=f"surveyor_ui:{symbol}",
         timeframe_inputs=timeframe_inputs,
     )
+    for tf, payload in timeframe_inputs.items():
+        if tf not in market_data.get("timeframes", {}):
+            continue
+        extras = {
+            "quality_band": payload.get("quality_band"),
+            "circuit_breaker_action": payload.get("circuit_breaker_action"),
+            "repair_policy_contract": payload.get("repair_policy_contract"),
+            "repair_provenance": payload.get("repair_provenance"),
+            "repair_summary": payload.get("repair_summary"),
+        }
+        market_data["timeframes"][tf].update({key: value for key, value in extras.items() if value is not None})
     candles_by_tf = {
         tf: payload.get("candles")
         for tf, payload in timeframe_inputs.items()
@@ -493,4 +1031,7 @@ def build_surveyor_packet_snapshot(
     )
     packet["meta"]["ui_source"] = "MarketArbiter/market_arbiter/web/app.py"
     packet["meta"]["packet_contract"] = "surveyor_packet_contract_v1"
+    packet["meta"]["continuity_state"] = (runner_status or {}).get("continuity_state", "unknown")
+    packet["bundle"] = build_surveyor_dataset_bundle(packet=packet, runner_status=runner_status)
+    packet["diagnostics"] = dict(packet["bundle"].get("diagnostics") or {})
     return packet

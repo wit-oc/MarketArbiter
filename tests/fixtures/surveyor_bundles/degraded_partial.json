@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "bundle_contract": "surveyor_unified_dataset_bundle_v1",
+    "bundle_id": "surveyor_bundle:BTCUSDT:fixture-degraded-partial",
+    "symbol": "BTCUSDT",
+    "as_of_ts": "2026-04-27T15:05:00Z",
+    "build_mode": "live",
+    "bundle_status": "partial",
+    "primary_feed_provider": "blofin",
+    "continuity_state": "degraded"
+  },
+  "delivery_profiles": {
+    "ui_full": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels", "interaction_lifecycle"],
+    "arbiter_core": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels"],
+    "backtest_core": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels", "interaction_lifecycle"]
+  },
+  "datasets": {
+    "feed_state": {
+      "family": "feed_state",
+      "contract_version": "surveyor_feed_state_dataset_v1",
+      "status": "partial",
+      "summary": {"issue_count": 1, "available_timeframes": ["5m"], "missing_timeframes": ["4H", "1D", "1W"]},
+      "timeframes": {"5m": {"freshness_state": "fresh"}},
+      "provenance": {"feed_provider": "blofin"},
+      "payload": {"provider": "blofin"},
+      "issues": [{"family": "feed_state", "timeframe": "4H", "issue_kind": "upstream_missing_input", "reason": "missing_feed_input"}]
+    },
+    "structure_state": {
+      "family": "structure_state",
+      "contract_version": "surveyor_structure_state_dataset_v1",
+      "status": "partial",
+      "summary": {"issue_count": 1, "missing_input_timeframes": ["4H"]},
+      "timeframes": {"5m": {"status": "ok"}},
+      "provenance": {"upstream_family": "feed_state"},
+      "payload": {"timeframes": {"5m": {"status": "ok"}}},
+      "issues": [{"family": "structure_state", "timeframe": "4H", "issue_kind": "upstream_missing_input", "reason": "missing_feed_input"}]
+    },
+    "fib_context": {
+      "family": "fib_context",
+      "contract_version": "surveyor_fib_context_dataset_v1",
+      "status": "partial",
+      "summary": {"issue_count": 0, "active_timeframes": []},
+      "timeframes": {},
+      "provenance": {},
+      "payload": {"contexts_by_timeframe": {}},
+      "issues": []
+    },
+    "dynamic_levels": {
+      "family": "dynamic_levels",
+      "contract_version": "surveyor_dynamic_levels_dataset_v1",
+      "status": "partial",
+      "summary": {"issue_count": 0, "level_count": 0},
+      "timeframes": {},
+      "provenance": {},
+      "payload": {"levels": []},
+      "issues": []
+    }
+  },
+  "diagnostics": {
+    "issue_count": 2,
+    "issues": [
+      {"family": "feed_state", "timeframe": "4H", "issue_kind": "upstream_missing_input", "reason": "missing_feed_input"},
+      {"family": "structure_state", "timeframe": "4H", "issue_kind": "upstream_missing_input", "reason": "missing_feed_input"}
+    ]
+  }
+}

@@ -16,6 +16,7 @@ from market_arbiter.surveyor.phase1_contract import (
 
 from .dynamic_levels import DynamicLevelPacket, dynamic_level_packet_to_dict
 from .fib_context import FibContextState, FibDisarmReason, FibTimeframeState
+from .sr_lifecycle import classify_sr_zones
 
 SURVEYOR_PACKET_CONTRACT = "surveyor_packet_contract_v1"
 SURVEYOR_DATA_FEED_CONTRACT = "surveyor_data_feed_contract_v1"
@@ -466,8 +467,13 @@ def build_sr_section(
         normalized_groups: dict[str, list[dict[str, Any]]] = {}
         for group_name, rows in groups.items():
             row_list = [_to_plain(row) for row in (rows if isinstance(rows, list) else [])]
+            for row in row_list:
+                row.setdefault("timeframe", normalized_tf)
             normalized_groups[str(group_name)] = row_list
             levels.extend(row_list)
+        if levels:
+            for row, metadata in zip(levels, classify_sr_zones(levels)):
+                row.update(metadata)
         selected_surfaces[normalized_tf] = {
             "contract": payload.get("contract") or view.get("contract") or SURVEYOR_SR_CONTRACT_FALLBACK,
             "tf": normalized_tf,

@@ -47,8 +47,8 @@ def test_happy_path_ingest_is_deterministic_and_sorted(tmp_path: Path) -> None:
 
     assert result == {"inserted": 2, "idempotent": 0}
     assert rows == [
-        (1_700_000_003_600, 1_700_000_007_200, 101, 112, 99, 104, 12.5),
-        (1_700_000_007_200, 1_700_000_010_800, 105, 113, 104, 110, 12.5),
+        (1_700_000_003_600, 1_700_000_007_200, "101", "112", "99", "104", "12.5"),
+        (1_700_000_007_200, 1_700_000_010_800, "105", "113", "104", "110", "12.5"),
     ]
 
 
@@ -63,6 +63,19 @@ def test_duplicate_idempotent_ingest_noops(tmp_path: Path) -> None:
     assert first == {"inserted": 1, "idempotent": 0}
     assert second == {"inserted": 0, "idempotent": 1}
     assert count == 1
+
+
+def test_high_precision_decimal_ingest_is_idempotent(tmp_path: Path) -> None:
+    conn = init_db(str(tmp_path / "ls.sqlite"))
+    candle = _candle(volume="297472.47450138099")
+
+    first = upsert_market_candles(conn, [candle], ingest_ts_ms=1_700_000_010_000)
+    second = upsert_market_candles(conn, [candle], ingest_ts_ms=1_700_000_020_000)
+    stored = conn.execute("SELECT volume FROM market_candles;").fetchone()[0]
+
+    assert first == {"inserted": 1, "idempotent": 0}
+    assert second == {"inserted": 0, "idempotent": 1}
+    assert stored == "297472.47450138099"
 
 
 def test_duplicate_conflict_rejected(tmp_path: Path) -> None:

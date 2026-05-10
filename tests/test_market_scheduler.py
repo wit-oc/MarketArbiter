@@ -18,8 +18,11 @@ from market_arbiter.core.market_scheduler import (
 class StubProvider:
     batches: list[list[CandleDTO]]
     error: Exception | None = None
+    calls: list[tuple[str, str, int | None, int]] | None = None
 
     def fetch_ohlcv(self, symbol: str, timeframe: str, since_ms: int | None, limit: int):
+        if self.calls is not None:
+            self.calls.append((symbol, timeframe, since_ms, limit))
         if self.error:
             raise self.error
         if not self.batches:
@@ -75,6 +78,89 @@ def test_boundary_close_ingest_success_updates_checkpoint(tmp_path):
     assert out["inserted"] == 1
 
 
+def test_incremental_cycle_fetches_after_checkpoint_boundary(tmp_path):
+    conn = init_db(str(tmp_path / "db.sqlite"))
+    calls: list[tuple[str, str, int | None, int]] = []
+    provider = StubProvider(batches=[[_candle(180_000)]], calls=calls)
+    scheduler = MarketDataScheduler(conn, provider)
+    key = SchedulerKey("ccxt", "binance", "BTC/USDT", "1m")
+    conn.execute(
+        """
+        INSERT INTO feed_checkpoints(provider_id, venue, symbol, timeframe, last_ts_open_ms, last_success_ms, last_attempt_ms, failure_count, state, last_reason_code, trace_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        ("ccxt", "binance", "BTC/USDT", "1m", 120_000, 120_500, 120_500, 0, "ok", None, "seed"),
+    )
+
+    out = scheduler.run_cycle(key, now_ms=245_000, trace_id="trace-boundary")
+
+    assert calls == [("BTC/USDT", "1m", 180_000, 1000)]
+    assert out["state"] == "ok"
+    assert out["inserted"] == 1
+
+
+def test_incremental_cycle_accepts_multi_candle_catchup_after_checkpoint_gap(tmp_path):
+    conn = init_db(str(tmp_path / "db.sqlite"))
+    provider = StubProvider(batches=[[_candle(180_000), _candle(240_000), _candle(300_000)]])
+    scheduler = MarketDataScheduler(conn, provider)
+    key = SchedulerKey("ccxt", "binance", "BTC/USDT", "1m")
+    conn.execute(
+        """
+        INSERT INTO feed_checkpoints(provider_id, venue, symbol, timeframe, last_ts_open_ms, last_success_ms, last_attempt_ms, failure_count, state, last_reason_code, trace_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        ("ccxt", "binance", "BTC/USDT", "1m", 120_000, 120_500, 120_500, 0, "ok", None, "seed"),
+    )
+
+    out = scheduler.run_cycle(key, now_ms=365_000, trace_id="trace-catchup")
+
+    row = conn.execute("SELECT last_ts_open_ms, state, failure_count FROM feed_checkpoints").fetchone()
+    assert row == (300_000, "ok", 0)
+    assert out["state"] == "ok"
+    assert out["inserted"] == 3
+
+
+def test_incremental_cycle_ignores_not_yet_closed_candles(tmp_path):
+    conn = init_db(str(tmp_path / "db.sqlite"))
+    provider = StubProvider(batches=[[_candle(180_000), _candle(240_000)]])
+    scheduler = MarketDataScheduler(conn, provider)
+    key = SchedulerKey("ccxt", "binance", "BTC/USDT", "1m")
+    conn.execute(
+        """
+        INSERT INTO feed_checkpoints(provider_id, venue, symbol, timeframe, last_ts_open_ms, last_success_ms, last_attempt_ms, failure_count, state, last_reason_code, trace_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        ("ccxt", "binance", "BTC/USDT", "1m", 120_000, 120_500, 120_500, 0, "ok", None, "seed"),
+    )
+
+    out = scheduler.run_cycle(key, now_ms=245_000, trace_id="trace-closed-only")
+
+    assert out["state"] == "ok"
+    assert out["inserted"] == 1
+    rows = conn.execute("SELECT ts_open_ms FROM market_candles ORDER BY ts_open_ms").fetchall()
+    assert rows == [(180_000,)]
+
+
+def test_cycle_clears_transient_error_when_checkpoint_is_current(tmp_path):
+    conn = init_db(str(tmp_path / "db.sqlite"))
+    provider = StubProvider(batches=[])
+    scheduler = MarketDataScheduler(conn, provider)
+    key = SchedulerKey("ccxt", "binance", "BTC/USDT", "1m")
+    conn.execute(
+        """
+        INSERT INTO feed_checkpoints(provider_id, venue, symbol, timeframe, last_ts_open_ms, last_success_ms, last_attempt_ms, failure_count, state, last_reason_code, trace_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        ("ccxt", "binance", "BTC/USDT", "1m", 180_000, 120_500, 120_500, 3, "tripped", "PROVIDER_UPSTREAM_ERROR", "seed"),
+    )
+
+    out = scheduler.run_cycle(key, now_ms=230_000, trace_id="trace-current-after-trip")
+
+    row = conn.execute("SELECT last_ts_open_ms, state, failure_count, last_reason_code FROM feed_checkpoints").fetchone()
+    assert row == (180_000, "ok", 0, None)
+    assert out["state"] == "ok"
+
+
 def test_startup_bootstrap_backfill_persists_checkpoint(tmp_path):
     conn = init_db(str(tmp_path / "db.sqlite"))
     provider = StubProvider(batches=[[ _candle(60_000), _candle(120_000) ], []])
@@ -85,6 +171,26 @@ def test_startup_bootstrap_backfill_persists_checkpoint(tmp_path):
 
     cp = conn.execute("SELECT last_ts_open_ms, state FROM feed_checkpoints").fetchone()
     assert cp == (120_000, "ok")
+    assert out["state"] == "ok"
+
+
+def test_backfill_continues_when_provider_returns_partial_pages_but_progresses(tmp_path):
+    conn = init_db(str(tmp_path / "db.sqlite"))
+    provider = StubProvider(
+        batches=[
+            [_candle(60_000), _candle(120_000)],
+            [_candle(180_000), _candle(240_000)],
+            [_candle(300_000)],
+            [],
+        ]
+    )
+    scheduler = MarketDataScheduler(conn, provider, max_backfill_bars=10, backfill_page_limit=10)
+    key = SchedulerKey("ccxt", "binance", "BTC/USDT", "1m")
+
+    out = scheduler.run_cycle(key, now_ms=365_000, trace_id="trace-pages")
+
+    cp = conn.execute("SELECT last_ts_open_ms, state FROM feed_checkpoints").fetchone()
+    assert cp == (300_000, "ok")
     assert out["state"] == "ok"
 
 
@@ -197,7 +303,7 @@ def test_breaker_trip_and_cooldown_probe_recovery(tmp_path):
     assert out3["state"] == "tripped"
 
     provider.error = None
-    provider.batches = [[_candle(120_000)]]
+    provider.batches = [[_candle(0)]]
     out4 = scheduler.run_cycle(key, now_ms=112_000, trace_id="trace-5d")
     cp = conn.execute("SELECT state FROM feed_checkpoints").fetchone()[0]
     assert out4["state"] == "ok"

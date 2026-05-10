@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "bundle_contract": "surveyor_unified_dataset_bundle_v1",
+    "bundle_id": "surveyor_bundle:BTCUSDT:fixture-replay",
+    "symbol": "BTCUSDT",
+    "as_of_ts": "2026-04-27T15:10:00Z",
+    "build_mode": "replay",
+    "bundle_status": "complete",
+    "primary_feed_provider": "fixture_replay",
+    "continuity_state": "replay_only"
+  },
+  "delivery_profiles": {
+    "ui_full": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels", "interaction_lifecycle"],
+    "arbiter_core": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels"],
+    "backtest_core": ["feed_state", "structure_state", "sr_zones", "fib_context", "dynamic_levels", "interaction_lifecycle"]
+  },
+  "datasets": {
+    "feed_state": {"family": "feed_state", "contract_version": "surveyor_feed_state_dataset_v1", "status": "replay_only", "summary": {"issue_count": 0}, "timeframes": {"5m": {"freshness_state": "replay_only"}}, "provenance": {"feed_provider": "fixture_replay"}, "payload": {"dataset_mode": "replay"}, "issues": []},
+    "structure_state": {"family": "structure_state", "contract_version": "surveyor_structure_state_dataset_v1", "status": "complete", "summary": {"issue_count": 0}, "timeframes": {"5m": {"status": "ok"}}, "provenance": {"upstream_family": "feed_state"}, "payload": {"timeframes": {"5m": {"status": "ok"}}}, "issues": []},
+    "sr_zones": {"family": "sr_zones", "contract_version": "surveyor_sr_dataset_v1", "status": "complete", "summary": {"issue_count": 0}, "timeframes": {"4H": {"selector_surface": "replay_4h"}}, "provenance": {"source_contract_version": "authoritative_levels_view_v1"}, "payload": {"selected_surfaces": {"4H": {"selector_surface": "replay_4h"}}}, "issues": []},
+    "fib_context": {"family": "fib_context", "contract_version": "surveyor_fib_context_dataset_v1", "status": "complete", "summary": {"issue_count": 0}, "timeframes": {"5m": {"fib_state": "replay_active"}}, "provenance": {"source_event_id": "replay-evt-1"}, "payload": {"contexts_by_timeframe": {"5m": {"fib_state": "replay_active"}}}, "issues": []},
+    "dynamic_levels": {"family": "dynamic_levels", "contract_version": "surveyor_dynamic_levels_dataset_v1", "status": "complete", "summary": {"issue_count": 0, "level_count": 1}, "timeframes": {"5m": {"level_id": "replay-dyn-1"}}, "provenance": {"source_event_id": "replay-evt-1"}, "payload": {"levels": [{"level_id": "replay-dyn-1", "timeframe": "5m"}]}, "issues": []},
+    "interaction_lifecycle": {"family": "interaction_lifecycle", "contract_version": "surveyor_interaction_lifecycle_dataset_v1", "status": "complete", "summary": {"issue_count": 0, "state_change_count": 2}, "timeframes": {}, "provenance": {"upstream_family": "structure_state"}, "payload": {"state_changes": [{"event": "entered_zone"}, {"event": "rejected_zone"}]}, "issues": []}
+  },
+  "diagnostics": {"issue_count": 0, "issues": []}
+}

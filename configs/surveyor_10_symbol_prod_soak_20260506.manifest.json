@@ -1,0 +1,263 @@
+{
+  "backfill_page_limit": 1000,
+  "close_lag_ms": 2500,
+  "contract": "surveyor_symbol_onboarding_manifest_v1",
+  "control": {
+    "approval_required": true,
+    "approval_status": "approved_for_guarded_10_symbol_real_72h_soak",
+    "as_of_utc": "2026-05-06T02:27:00Z",
+    "auto_widening_enabled": false,
+    "canonical_production_writes_enabled": true,
+    "final_guard_not_before_ms": 1778361728348,
+    "operator_enabled_at_ms": 1778102528348,
+    "operator_enabled_at_utc": "2026-05-06T21:22:08Z",
+    "operator_enabled_by": "redact",
+    "owner": "surveyor-feed-top100-readiness-runner-20260505",
+    "promotion_policy": "manual_with_auto_recommendation",
+    "real_soak_started": true,
+    "soak_started_at_ms": 1778102528348,
+    "soak_started_at_utc": "2026-05-06T21:22:08Z",
+    "stage": "small_cohort_soak"
+  },
+  "db_path": "data/market_arbiter.sqlite",
+  "environment": "prod",
+  "generated_at_utc": "2026-05-06T21:22:08Z",
+  "generated_from": "artifacts/feed_bakeoff/feed-bakeoff-phase-b-reconnect-20260501-24h/okx_10_symbol_cohort_start_20260505/okx_10_symbol_onboarding.manifest.json",
+  "loop_sleep_ms": 65000,
+  "max_backfill_bars": 2000,
+  "provider_policy": {
+    "allow_prod": true,
+    "auto_widening_enabled": false,
+    "canonical_production_writes_enabled": true,
+    "provider_policy_path": "configs/surveyor_feed_provider_policy.v1.json",
+    "provider_roles": {
+      "live_primary": "bybit_ws",
+      "rest_history_repair": "okx_rest",
+      "shadow_fallback": "okx_ws"
+    },
+    "real_soak_started": true,
+    "rest_hard_ceiling_per_minute": 120,
+    "rest_requests_per_minute_cap": 90,
+    "scope": "public market data only; no auth; no orders",
+    "source_routes": {
+      "gap_repair": {
+        "dataset_prefix": "okx_gap_repair",
+        "provider_id": "okx",
+        "request_class": "gap_repair",
+        "role": "gap_repair",
+        "transport": "rest",
+        "venue": "okx",
+        "write_enabled": true,
+        "write_provider_id": "okx_rest_repair"
+      },
+      "live_ws_primary": {
+        "dataset_prefix": "bybit_live_ws",
+        "provider_id": "bybit",
+        "request_class": "live_ws",
+        "role": "live_ws_primary",
+        "transport": "websocket",
+        "venue": "bybit",
+        "write_enabled": true,
+        "write_provider_id": "bybit_ws"
+      },
+      "live_ws_shadow_fallback": {
+        "dataset_prefix": "okx_shadow_ws",
+        "provider_id": "okx",
+        "request_class": "live_ws",
+        "role": "live_ws_shadow_fallback",
+        "transport": "websocket",
+        "venue": "okx",
+        "write_enabled": true,
+        "write_provider_id": "okx_ws"
+      },
+      "rest_history": {
+        "dataset_prefix": "okx_rest_history",
+        "provider_id": "okx",
+        "request_class": "rest_history",
+        "role": "rest_history",
+        "transport": "rest",
+        "venue": "okx",
+        "write_enabled": true,
+        "write_provider_id": "okx_rest"
+      }
+    }
+  },
+  "request_spacing_ms": 300,
+  "soak_artifact_dir": "artifacts/feed_rollout/okx_10_symbol_prod_soak_20260506",
+  "stages": [
+    {
+      "id": "small_cohort_soak",
+      "label": "Stage 2 - OKX-backed 10-symbol full-history cohort",
+      "max_soak_hours": 120,
+      "min_soak_hours": 72,
+      "promotion_requires": [
+        "provider_guardrails_pass",
+        "split_source_routing_pass",
+        "runner_status_packet_written",
+        "canonical_production_writes_disabled",
+        "operator_pass"
+      ],
+      "target_symbols": 10
+    },
+    {
+      "id": "full_history_extension_16",
+      "label": "Optional full-history extension to 16 symbols",
+      "max_soak_hours": 120,
+      "min_soak_hours": 72,
+      "promotion_requires": [
+        "small_cohort_pass_or_conditional_pass",
+        "operator_pass"
+      ],
+      "target_symbols": 16
+    }
+  ],
+  "symbols": [
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 1,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-a",
+      "stage_state": "soaking",
+      "symbol": "BTC-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 2,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-a",
+      "stage_state": "soaking",
+      "symbol": "ETH-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 3,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-a",
+      "stage_state": "soaking",
+      "symbol": "OKB-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 4,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-a",
+      "stage_state": "soaking",
+      "symbol": "SOL-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 5,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-a",
+      "stage_state": "soaking",
+      "symbol": "DOGE-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 6,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-b",
+      "stage_state": "soaking",
+      "symbol": "XRP-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 7,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-b",
+      "stage_state": "soaking",
+      "symbol": "BCH-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 8,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-b",
+      "stage_state": "soaking",
+      "symbol": "1INCH-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 9,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-b",
+      "stage_state": "soaking",
+      "symbol": "AAVE-USDT"
+    },
+    {
+      "admitted_at_ms": 1778102528348,
+      "admitted_stage": "small_cohort_soak",
+      "cohort": "okx_full_history_10",
+      "enabled": true,
+      "last_review_status": "pending",
+      "last_state_change_ms": 1778102528348,
+      "operator_enabled_at_ms": 1778102528348,
+      "priority": 10,
+      "prod_soak_started_at_ms": 1778102528348,
+      "shard_hint": "ws-b",
+      "stage_state": "soaking",
+      "symbol": "ADA-USDT"
+    }
+  ],
+  "timeframes": [
+    "5m",
+    "4h",
+    "1d",
+    "1w"
+  ],
+  "workset_output_path": "configs/generated/surveyor_feed_workset.okx_10_symbol_prod_soak_20260506.json"
+}

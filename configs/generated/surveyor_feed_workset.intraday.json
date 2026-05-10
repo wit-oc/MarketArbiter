@@ -1,0 +1,27 @@
+{
+  "backfill_page_limit": 1000,
+  "close_lag_ms": 2500,
+  "contract": "surveyor_feed_workset_manifest_v1",
+  "db_path": "data/market_arbiter.sqlite",
+  "loop_sleep_ms": 15000,
+  "max_backfill_bars": 2000,
+  "onboarding_manifest_path": "configs/surveyor_symbol_onboarding.example.json",
+  "onboarding_stage": "single_pair_soak",
+  "shards": {
+    "ws-a": [
+      "BTCUSDT"
+    ]
+  },
+  "source_symbols": [
+    "BTC-USDT"
+  ],
+  "symbols": [
+    "BTCUSDT"
+  ],
+  "timeframes": [
+    "5m",
+    "4h",
+    "1d",
+    "1w"
+  ]
+}

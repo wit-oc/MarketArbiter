@@ -1,0 +1,87 @@
+{
+  "contract": "surveyor_symbol_onboarding_manifest_v1",
+  "environment": "demo",
+  "db_path": "data/market_arbiter.sqlite",
+  "workset_output_path": "configs/generated/surveyor_feed_workset.intraday.json",
+  "control": {
+    "owner": "intraday-control-thread",
+    "stage": "single_pair_soak",
+    "approval_required": true,
+    "promotion_policy": "manual_with_auto_recommendation"
+  },
+  "provider_policy": {
+    "provider": "blofin_ws_plus_rest",
+    "rest_requests_per_minute_cap": 90,
+    "rest_hard_ceiling_per_minute": 120,
+    "ws_connects_per_second_cap": 1,
+    "rate_limit_cooldown_seconds": 60,
+    "firewall_ban_cooldown_seconds": 300,
+    "rapid_failure_threshold": 3,
+    "rapid_failure_window_seconds": 600,
+    "rapid_failure_cooldown_seconds": 900,
+    "allow_prod": false
+  },
+  "stages": [
+    {
+      "id": "single_pair_soak",
+      "label": "Stage 1 - single pair",
+      "target_symbols": 1,
+      "min_soak_hours": 72,
+      "max_soak_hours": 168,
+      "promotion_requires": [
+        "ws_canary_pass",
+        "runner_canary_pass",
+        "no_firewall_ban_events",
+        "no_open_recovery_blockers",
+        "daily_boundary_observed"
+      ]
+    },
+    {
+      "id": "small_cohort_soak",
+      "label": "Stage 2 - 5 to 10 pairs",
+      "target_symbols": 5,
+      "min_soak_hours": 72,
+      "max_soak_hours": 120,
+      "promotion_requires": [
+        "status_green_majority",
+        "no_firewall_ban_events",
+        "recompute_backlog_clear",
+        "operator_pass"
+      ]
+    },
+    {
+      "id": "medium_cohort_soak",
+      "label": "Stage 3 - 25 pairs",
+      "target_symbols": 25,
+      "min_soak_hours": 72,
+      "max_soak_hours": 120,
+      "promotion_requires": [
+        "shard_health_visible",
+        "bounded_recompute_pressure",
+        "operator_pass"
+      ]
+    }
+  ],
+  "symbols": [
+    {
+      "symbol": "BTC-USDT",
+      "enabled": true,
+      "stage_state": "promoted",
+      "cohort": "core",
+      "priority": 1,
+      "shard_hint": "ws-a",
+      "last_review_status": "pass",
+      "notes": "initial live canary pair"
+    },
+    {
+      "symbol": "ETH-USDT",
+      "enabled": false,
+      "stage_state": "proposed",
+      "cohort": "candidate",
+      "priority": 2,
+      "shard_hint": "ws-a",
+      "last_review_status": "pending",
+      "notes": "held until Stage 2 approval"
+    }
+  ]
+}
