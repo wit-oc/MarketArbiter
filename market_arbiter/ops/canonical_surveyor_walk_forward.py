@@ -8,6 +8,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
+from market_arbiter.arbiter.backtest_splits import (
+    build_fold_datasets,
+    build_split_report,
+    fold_from_mapping,
+    threshold_training_provenance,
+)
 from market_arbiter.arbiter.ohlcv_backtest import OHLCVBacktestConfig, run_ohlcv_backtest
 from market_arbiter.arbiter.ohlcv_retest_adapter import load_market_candles_from_db, write_json
 from market_arbiter.arbiter.strategy_backtest import build_foxian_retest_backtest_dataset
@@ -156,11 +162,22 @@ def _summary_markdown(report: Mapping[str, Any]) -> str:
         lines.append(
             f"| {row.get('stop_policy')} | {row.get('setup_id')} | {row.get('target')} | {summary.get('closed_trades', 0)} | {summary.get('win_rate', 0):.2%} | {summary.get('avg_net_r_multiple', 0):+.4f} | {summary.get('total_net_bps', 0):+.2f} | {summary.get('folds_with_trades', 0)} |"
         )
+    split_audit = _as_dict(report.get("split_audit"))
+    lines.extend(["", "## Split audit", ""])
+    lines.append(f"- Chronology: `{'ok' if split_audit.get('all_chronology_ok') else 'issue'}`")
+    for fold in _as_list(split_audit.get("folds")):
+        fold = _as_dict(fold)
+        train = _as_dict(fold.get("train"))
+        test = _as_dict(fold.get("test"))
+        lines.append(
+            f"- `{fold.get('fold_id')}` train candidates `{train.get('trade_candidates', 0)}`, test candidates `{test.get('trade_candidates', 0)}`, overlap `{len(_as_list(fold.get('overlap_entry_event_ids')))}`"
+        )
     lines.extend(["", "## Fold details", ""])
     for row in report.get("fold_results", []):
         summary = _as_dict(_as_dict(row.get("backtest")).get("summary"))
+        provenance = _as_dict(row.get("threshold_provenance"))
         lines.append(
-            f"- `{row.get('fold_id')}` `{row.get('stop_policy')}` `{row.get('setup_id')}` `{row.get('target')}`: trades `{summary.get('trade_count', 0)}`, win `{summary.get('win_rate', 0):.2%}`, avgR `{summary.get('avg_net_r_multiple', 0):+.4f}`, bps `{summary.get('total_net_bps', 0):+.2f}`"
+            f"- `{row.get('fold_id')}` `{row.get('stop_policy')}` `{row.get('setup_id')}` `{row.get('target')}`: trades `{summary.get('trade_count', 0)}`, train feature events `{provenance.get('threshold_feature_count', 0)}`, win `{summary.get('win_rate', 0):.2%}`, avgR `{summary.get('avg_net_r_multiple', 0):+.4f}`, bps `{summary.get('total_net_bps', 0):+.2f}`"
         )
     lines.extend(["", "## Interpretation", ""])
     for item in report.get("interpretation", []):
@@ -198,6 +215,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         profiles.extend(symbol_profiles)
     base_dataset = build_foxian_retest_backtest_dataset(profiles)
     features_by_event = _enrich_profiles(profiles, candles_by_symbol)
+    folds = [fold_from_mapping(fold) for fold in FOLDS]
+    split_audit = build_split_report(base_dataset, folds)
 
     stop_specs = [
         {"stop_policy": "full_zone_5bps", "cap_risk_bps": None},
@@ -213,12 +232,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     targets = [2.0, 3.0]
     fold_results: list[dict[str, Any]] = []
-    for fold in FOLDS:
-        train_end = _parse_ts(str(fold["train_end"]))
-        test_start = _parse_ts(str(fold["test_start"]))
-        test_end = _parse_ts(str(fold["test_end"]))
-        train_dataset = _dataset_subset(base_dataset, lambda ev, train_end=train_end: (_candidate_ts(ev) is not None and int(_candidate_ts(ev) or 0) <= train_end))
+    for fold, fold_obj in zip(FOLDS, folds, strict=True):
+        train_dataset = build_fold_datasets(base_dataset, fold_obj)["train"]
         thresholds = _train_thresholds(_as_list(train_dataset.get("evaluations")), features_by_event)
+        threshold_provenance = threshold_training_provenance(train_dataset, features_by_event)
         for stop_spec in stop_specs:
             stopped_dataset, stop_manifest = _dataset_for_policy(
                 base_dataset,
@@ -227,7 +244,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 policy=str(stop_spec["stop_policy"]),
                 cap_risk_bps=stop_spec["cap_risk_bps"],
             )
-            stopped_test_dataset = _dataset_subset(stopped_dataset, _period_filter(test_start, test_end))
+            stopped_test_dataset = build_fold_datasets(stopped_dataset, fold_obj)["test"]
             for setup_id in setup_ids:
                 setup_dataset = _apply_setup_filter(stopped_test_dataset, features_by_event, setup_id, thresholds)
                 for target in targets:
@@ -242,6 +259,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                         "test_start": fold["test_start"],
                         "test_end": fold["test_end"],
                         "thresholds": thresholds,
+                        "threshold_provenance": threshold_provenance,
                         "stop_policy": stop_spec["stop_policy"],
                         "cap_risk_bps": stop_spec["cap_risk_bps"],
                         "setup_id": setup_id,
@@ -273,6 +291,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "profile_count": len(profiles),
         "trade_candidate_count": len(_as_list(base_dataset.get("trade_candidates"))),
         "folds": FOLDS,
+        "split_audit": split_audit,
         "stop_specs": stop_specs,
         "setup_ids": setup_ids,
         "targets": ["2R", "3R"],

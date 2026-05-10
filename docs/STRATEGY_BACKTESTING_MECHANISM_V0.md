@@ -120,13 +120,19 @@ The fuller OHLCV runner path is now started:
 3. Run `python3 -m market_arbiter.ops.strategy_backtest_run --dataset <dataset.json> --ohlcv-dir <ohlcv_dir> --timeframe 4h --output <report.json>`.
 4. The runner computes event-study windows after every `event_study_row`.
 5. The runner simulates every `trade_candidate` on supplied per-symbol OHLCV with fees/slippage/funding.
-6. Next comparison layer should add baselines:
+6. Walk-forward report paths must emit split-audit evidence:
+   - train/test fold chronology,
+   - train-window threshold provenance,
+   - test-set candidate/event counts,
+   - train/test event-id overlap checks.
+7. Next comparison layer should add baselines:
    - no-trade / cash,
    - simple breakout without retest,
    - retest without confluence filters.
 
 OHLCV input contract: `docs/OHLCV_BACKTEST_INPUT_CONTRACT_V0.md`.
 Runner code: `market_arbiter/arbiter/ohlcv_backtest.py` and `market_arbiter/ops/strategy_backtest_run.py`.
+Walk-forward split audit helper: `market_arbiter/arbiter/backtest_splits.py`.
 
 ## Integrity guardrails
 
@@ -135,3 +141,4 @@ Runner code: `market_arbiter/arbiter/ohlcv_backtest.py` and `market_arbiter/ops/
 - Candidate trades must include costs before any performance claim.
 - Preserve stale-but-valid historical flip zones until invalidation rules remove them; do not erase them because newer zones formed.
 - Report ambiguity as reason codes instead of silently overfitting.
+- Walk-forward artifacts must prove threshold training uses train-window events only; positive results without split-audit evidence stay research-only.

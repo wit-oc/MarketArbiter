@@ -40,4 +40,5 @@ Each point-in-time profile becomes one of:
 2. Trade-simulation report: win rate, expectancy, max drawdown, and fee/slippage/funding drag. Initial implementation: `market_arbiter.arbiter.ohlcv_backtest.run_ohlcv_backtest`.
 3. Baseline comparison report: no-trade/cash, breakout-without-retest, retest-without-confluence. Not implemented yet.
 4. Ambiguity report: reason-code counts for watch/reject cases.
-5. Integrity report: proof that zone construction and retest qualification are point-in-time.
+5. Split-audit report: train/test fold chronology, threshold-training event provenance, test event ids, and overlap checks. Initial implementation: `market_arbiter.arbiter.backtest_splits`, wired into canonical walk-forward reports.
+6. Integrity report: proof that zone construction and retest qualification are point-in-time.

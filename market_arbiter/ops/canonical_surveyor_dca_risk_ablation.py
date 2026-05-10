@@ -7,6 +7,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from market_arbiter.arbiter.backtest_splits import (
+    build_fold_datasets,
+    build_split_report,
+    fold_from_mapping,
+    threshold_training_provenance,
+)
 from market_arbiter.arbiter.dca_execution import DCA_PLANS, graduated_confluence_risk_pct, planned_dca_entries
 from market_arbiter.arbiter.ohlcv_backtest import OHLCVBacktestConfig, _candidate_costs, _find_first_candle_after, _slip, parse_timestamp
 from market_arbiter.arbiter.ohlcv_retest_adapter import load_market_candles_from_db, write_json
@@ -468,6 +474,16 @@ def _summary_markdown(report: Mapping[str, Any]) -> str:
         lines.append(
             f"| {row.get('stop_policy')} | {row.get('setup_id')} | {row.get('target')} | {row.get('take_profit_plan')} | {row.get('risk_model')} | {row.get('dca_plan')} | {s.get('trade_count', 0)} | {s.get('win_rate', 0):.2%} | {s.get('avg_net_r_multiple', 0):+.4f} | ${s.get('portfolio_final_pnl', 0):+.2f} | ${s.get('portfolio_max_pnl', 0):+.2f} | ${s.get('portfolio_max_drawdown', 0):.2f} | {s.get('execution_order_ambiguity_rate', s.get('intrabar_ambiguity_rate', 0)):.1%} | {s.get('diagnostic_only_intrabar_rate', 0):.1%} | {s.get('folds_with_trades', 0)} |"
         )
+    split_audit = _as_dict(report.get("split_audit"))
+    lines.extend(["", "## Split audit", ""])
+    lines.append(f"- Chronology: `{'ok' if split_audit.get('all_chronology_ok') else 'issue'}`")
+    for fold in _as_list(split_audit.get("folds")):
+        fold = _as_dict(fold)
+        train = _as_dict(fold.get("train"))
+        test = _as_dict(fold.get("test"))
+        lines.append(
+            f"- `{fold.get('fold_id')}` train candidates `{train.get('trade_candidates', 0)}`, test candidates `{test.get('trade_candidates', 0)}`, overlap `{len(_as_list(fold.get('overlap_entry_event_ids')))}`"
+        )
     lines.extend([
         "",
         "## Reusable Arbiter artifacts",
@@ -531,6 +547,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         profiles.extend(ps)
     base_dataset = build_foxian_retest_backtest_dataset(profiles)
     features_by_event = _enrich_profiles(profiles, candles_by_symbol)
+    folds = [fold_from_mapping(fold) for fold in FOLDS]
+    split_audit = build_split_report(base_dataset, folds)
     # Add full-zone bounds for DCA ladders.
     for profile in profiles:
         event_id = _profile_event_id(profile)
@@ -551,15 +569,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     targets = [float(item.strip()) for item in str(args.targets).split(",") if item.strip()]
     fold_results: list[dict[str, Any]] = []
 
-    for fold in FOLDS:
-        train_end = _parse_ts(str(fold["train_end"]))
-        test_start = _parse_ts(str(fold["test_start"]))
-        test_end = _parse_ts(str(fold["test_end"]))
-        train_dataset = _dataset_subset(base_dataset, lambda ev, train_end=train_end: (_candidate_ts(ev) is not None and int(_candidate_ts(ev) or 0) <= train_end))
+    for fold, fold_obj in zip(FOLDS, folds, strict=True):
+        train_dataset = build_fold_datasets(base_dataset, fold_obj)["train"]
         thresholds = _train_thresholds(_as_list(train_dataset.get("evaluations")), features_by_event)
+        threshold_provenance = threshold_training_provenance(train_dataset, features_by_event)
         for stop_spec in stop_specs:
             stopped_dataset, stop_manifest = _dataset_for_policy(base_dataset, profiles, candles_by_symbol, policy=str(stop_spec["stop_policy"]), cap_risk_bps=stop_spec["cap_risk_bps"])
-            stopped_test = _dataset_subset(stopped_dataset, lambda ev, s=test_start, e=test_end: (_candidate_ts(ev) is not None and s <= int(_candidate_ts(ev) or 0) <= e))
+            stopped_test = build_fold_datasets(stopped_dataset, fold_obj)["test"]
             for setup_id in setup_ids:
                 setup_dataset = _apply_setup_filter(stopped_test, features_by_event, setup_id, thresholds)
                 for target in targets:
@@ -572,6 +588,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                                 "test_start": fold["test_start"],
                                 "test_end": fold["test_end"],
                                 "thresholds": thresholds,
+                                "threshold_provenance": threshold_provenance,
                                 "stop_policy": stop_spec["stop_policy"],
                                 "setup_id": setup_id,
                                 "target": f"{target:g}R",
@@ -604,6 +621,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "symbols": symbols,
         "profile_count": len(profiles),
         "trade_candidate_count": len(_as_list(base_dataset.get("trade_candidates"))),
+        "split_audit": split_audit,
         "risk_models": risk_models,
         "dca_plans": dca_plans,
         "take_profit_plans": [take_profit_plan],
